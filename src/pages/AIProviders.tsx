@@ -8,6 +8,7 @@ import * as api from "@/api";
 import type { AIProvider, AIProviderKind } from "@/api/types";
 import { toast, toastError } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { Select } from "@/components/ui/select";
 
 interface Preset {
   id: string;
@@ -322,15 +323,28 @@ export default function AIProviders() {
             </Field>
 
             <Field label="协议类型">
-              <select
+              <Select
+                className="w-full"
                 value={draft.kind}
-                onChange={(e) => setDraft({ ...draft, kind: e.target.value as AIProviderKind })}
-                className="h-9 rounded-lg border border-input bg-background px-3 text-sm w-full"
-              >
-                <option value="openai">OpenAI 兼容（DeepSeek / OpenAI / Moonshot / Qwen / Groq / OpenRouter…）</option>
-                <option value="anthropic">Anthropic Claude</option>
-                <option value="ollama">Ollama 本地</option>
-              </select>
+                onChange={(v) => setDraft({ ...draft, kind: v as AIProviderKind })}
+                options={[
+                  {
+                    value: "openai",
+                    label: "OpenAI 兼容",
+                    description: "DeepSeek / OpenAI / Moonshot / Qwen / Groq / OpenRouter…",
+                  },
+                  {
+                    value: "anthropic",
+                    label: "Anthropic Claude",
+                    description: "claude-sonnet / claude-opus / claude-haiku",
+                  },
+                  {
+                    value: "ollama",
+                    label: "Ollama 本地",
+                    description: "无需 API Key，本机 11434 端口",
+                  },
+                ]}
+              />
             </Field>
 
             <Field label="Base URL">

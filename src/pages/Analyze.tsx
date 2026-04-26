@@ -12,6 +12,8 @@ import { formatBytes, formatTime } from "@/lib/format";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useNavigate } from "react-router-dom";
+import { Select } from "@/components/ui/select";
+import { Bot } from "lucide-react";
 
 export default function Analyze() {
   const navigate = useNavigate();
@@ -89,18 +91,26 @@ export default function Analyze() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground shrink-0">使用模型</span>
-            <select
+            <Select
+              className="flex-1"
               value={providerId}
-              onChange={(e) => setProviderId(e.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm flex-1"
-            >
-              {providers.length === 0 && <option>（请先在「AI 模型」中添加）</option>}
-              {providers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} · {p.model} {p.is_active ? "（默认）" : ""}
-                </option>
-              ))}
-            </select>
+              onChange={setProviderId}
+              searchable={providers.length > 6}
+              placeholder={
+                providers.length === 0 ? "请先在「AI 模型」中添加…" : "选择模型"
+              }
+              options={providers.map((p) => ({
+                value: p.id,
+                label: p.name,
+                description: `${p.kind} · ${p.model}`,
+                icon: (
+                  <span className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                    <Bot className="w-3.5 h-3.5 text-primary-foreground" />
+                  </span>
+                ),
+                badge: p.is_active ? "默认" : undefined,
+              }))}
+            />
             <Button onClick={run} disabled={busy}>
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               开始分析

@@ -11,6 +11,7 @@ import type { Rule, RuleRecord } from "@/api/types";
 import { toast, toastError } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { relativeTime } from "@/lib/format";
+import { Select } from "@/components/ui/select";
 
 const newRule = (): Rule => ({
   id: crypto.randomUUID(),
@@ -366,17 +367,12 @@ function SelectField({
 }) {
   return (
     <Row label={label}>
-      <select
+      <Select
+        className="flex-1"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm"
-      >
-        {options.map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </select>
+        onChange={onChange}
+        options={options.map(([v, l]) => ({ value: v, label: l }))}
+      />
     </Row>
   );
 }
@@ -392,17 +388,18 @@ function ConditionRow({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
-      <select
+      <Select
+        className="w-44"
         value={cond.type}
-        onChange={(e) => onChange({ type: e.target.value, ...defaultsForCondition(e.target.value) })}
-        className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
-      >
-        <option value="ext_in">扩展名属于</option>
-        <option value="name_contains">文件名包含</option>
-        <option value="size_gt">大小 大于</option>
-        <option value="size_lt">大小 小于</option>
-        <option value="older_than_days">最近未访问 超过</option>
-      </select>
+        onChange={(v) => onChange({ type: v, ...defaultsForCondition(v) })}
+        options={[
+          { value: "ext_in", label: "扩展名属于" },
+          { value: "name_contains", label: "文件名包含" },
+          { value: "size_gt", label: "大小 大于" },
+          { value: "size_lt", label: "大小 小于" },
+          { value: "older_than_days", label: "最近未访问 超过" },
+        ]}
+      />
       {cond.type === "ext_in" && (
         <Input
           className="flex-1"
@@ -458,18 +455,19 @@ function ActionRow({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
-      <select
+      <Select
+        className="w-36"
         value={action.type}
-        onChange={(e) => onChange({ type: e.target.value, ...defaultsForAction(e.target.value) })}
-        className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
-      >
-        <option value="move">移动到</option>
-        <option value="copy">复制到</option>
-        <option value="rename">重命名为</option>
-        <option value="tag">添加标签</option>
-        <option value="delete">删除</option>
-        <option value="shell">执行命令</option>
-      </select>
+        onChange={(v) => onChange({ type: v, ...defaultsForAction(v) })}
+        options={[
+          { value: "move", label: "移动到" },
+          { value: "copy", label: "复制到" },
+          { value: "rename", label: "重命名为" },
+          { value: "tag", label: "添加标签" },
+          { value: "delete", label: "删除" },
+          { value: "shell", label: "执行命令" },
+        ]}
+      />
       {(action.type === "move" || action.type === "copy") && (
         <>
           <Input
