@@ -19,7 +19,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TopBar } from "@/components/layout/TopBar";
-import { AIPanel } from "@/components/layout/AIPanel";
 import { cn } from "@/lib/utils";
 import * as api from "@/api";
 import type { DiskInfo, RecentEntry, Tag, UserDir } from "@/api/types";
@@ -62,11 +61,31 @@ export default function Home() {
     { icon: Trash2, title: t("home.sug_cleanup"), to: "/analyze", color: "from-rose-400/20 to-pink-400/20" },
   ];
 
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 6
+      ? "凌晨好"
+      : hour < 12
+      ? t("home.greeting_morning").replace("，欢迎回来！", "")
+      : hour < 18
+      ? t("home.greeting_afternoon").replace("，欢迎回来！", "")
+      : t("home.greeting_evening").replace("，欢迎回来！", "");
+
   return (
     <div className="flex-1 flex min-w-0">
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
         <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
+          {/* Greeting hero */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {greeting}，欢迎回来！ <span className="inline-block">👋</span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {t("app.name")} · {t("app.tagline")}
+            </p>
+          </div>
+
           <div className="grid grid-cols-3 gap-6">
             {/* Main column */}
             <div className="col-span-2 space-y-6">
@@ -302,7 +321,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <AIPanel />
     </div>
   );
 }

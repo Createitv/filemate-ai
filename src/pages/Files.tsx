@@ -34,7 +34,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
-import { AIPanel } from "@/components/layout/AIPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -442,7 +441,6 @@ export default function Files() {
           }}
         />
       )}
-      <AIPanel />
     </div>
   );
 }

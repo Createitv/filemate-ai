@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search as SearchIcon, FolderOpen, RefreshCw, Loader2, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Input } from "@/components/ui/input";
@@ -11,19 +12,22 @@ import { formatBytes, formatTime, fileIconColor } from "@/lib/format";
 import { toast, toastError } from "@/components/ui/toast";
 
 export default function Search() {
-  const [q, setQ] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const [q, setQ] = useState(initialQ);
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [busy, setBusy] = useState(false);
   const [indexBusy, setIndexBusy] = useState(false);
   const [intent, setIntent] = useState<any>(null);
 
-  const search = async () => {
-    if (!q.trim()) return;
+  const search = async (queryOverride?: string) => {
+    const query = (queryOverride ?? q).trim();
+    if (!query) return;
     setBusy(true);
     try {
       const [parsed, results] = await Promise.all([
-        api.aiParseIntent(q).catch(() => null),
-        api.searchIndex(q, 200),
+        api.aiParseIntent(query).catch(() => null),
+        api.searchIndex(query, 200),
       ]);
       setIntent(parsed);
       setHits(results);
@@ -33,6 +37,15 @@ export default function Search() {
       setBusy(false);
     }
   };
+
+  // auto-fire when arriving via ?q=...
+  useEffect(() => {
+    if (initialQ) {
+      setQ(initialQ);
+      search(initialQ);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQ]);
 
   const reindex = async () => {
     const dir = await openDialog({ directory: true, multiple: false });
