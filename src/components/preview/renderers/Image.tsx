@@ -44,7 +44,7 @@ export function ImageRenderer({ path }: { path: string }) {
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden bg-[radial-gradient(circle_at_center,#1f2937,_#0b0e14)] select-none"
+      className="relative w-full h-full overflow-hidden bg-[radial-gradient(circle_at_center,#1f2937,_#0b0e14)] select-none flex items-center justify-center"
       onWheel={onWheel}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
@@ -56,9 +56,10 @@ export function ImageRenderer({ path }: { path: string }) {
         src={url}
         alt=""
         draggable={false}
-        className="absolute top-1/2 left-1/2 max-w-none transition-transform duration-75"
+        className="max-w-full max-h-full object-contain transition-transform duration-75"
         style={{
-          transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) scale(${scale}) rotate(${rotation}deg)`,
+          transform: `translate(${tx}px, ${ty}px) scale(${scale}) rotate(${rotation}deg)`,
+          transformOrigin: "center center",
         }}
       />
 
