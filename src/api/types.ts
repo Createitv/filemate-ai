@@ -126,6 +126,50 @@ export interface PreviewMeta {
   language?: string;
 }
 
+export type AIProviderKind = "openai" | "anthropic" | "ollama";
+
+export interface AIProvider {
+  id: string;
+  name: string;
+  kind: AIProviderKind;
+  base_url: string;
+  api_key: string;
+  model: string;
+  temperature: number;
+  max_tokens: number;
+  top_p: number;
+  extra: any;
+  is_active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface FileBrief {
+  path: string;
+  name: string;
+  size: number;
+  modified: number;
+}
+
+export interface FolderStats {
+  root: string;
+  total_files: number;
+  total_dirs: number;
+  total_bytes: number;
+  by_extension: Array<[string, number, number]>;
+  biggest: FileBrief[];
+  oldest: FileBrief[];
+  recently_modified: FileBrief[];
+  naming_anomalies: string[];
+  potential_dupes: number;
+}
+
+export interface AnalyzeResult {
+  stats: FolderStats;
+  advice: string;
+  session_id: string;
+}
+
 export type FsEvent =
   | { kind: "created"; path: string }
   | { kind: "modified"; path: string }

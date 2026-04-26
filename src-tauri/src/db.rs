@@ -112,4 +112,20 @@ CREATE TABLE IF NOT EXISTS cloud_accounts (
     config     TEXT NOT NULL,
     created_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS ai_providers (
+    id           TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    kind         TEXT NOT NULL,           -- 'openai' | 'anthropic' | 'ollama'
+    base_url     TEXT NOT NULL,
+    api_key      TEXT NOT NULL DEFAULT '',
+    model        TEXT NOT NULL,
+    temperature  REAL NOT NULL DEFAULT 0.7,
+    max_tokens   INTEGER NOT NULL DEFAULT 2048,
+    top_p        REAL NOT NULL DEFAULT 1.0,
+    extra        TEXT NOT NULL DEFAULT '{}',
+    is_active    INTEGER NOT NULL DEFAULT 0,
+    created_at   INTEGER NOT NULL,
+    updated_at   INTEGER NOT NULL
+);
 "#;

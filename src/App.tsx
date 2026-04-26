@@ -16,6 +16,8 @@ import Encryption from "@/pages/Encryption";
 import BatchRename from "@/pages/BatchRename";
 import Duplicates from "@/pages/Duplicates";
 import VersionHistory from "@/pages/VersionHistory";
+import AIProviders from "@/pages/AIProviders";
+import Analyze from "@/pages/Analyze";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { ToastViewport } from "@/components/ui/toast";
 
@@ -48,6 +50,8 @@ export default function App() {
           <Route path="encryption" element={<Encryption />} />
           <Route path="cloud" element={<Cloud />} />
           <Route path="terminal" element={<Terminal />} />
+          <Route path="ai-providers" element={<AIProviders />} />
+          <Route path="analyze" element={<Analyze />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

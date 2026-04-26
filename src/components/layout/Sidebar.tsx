@@ -17,6 +17,8 @@ import {
   Copy,
   Pencil,
   History,
+  Brain,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +29,11 @@ const main = [
   { to: "/search", icon: Search, key: "nav.search" },
   { to: "/workspace", icon: LayoutGrid, key: "nav.workspace" },
   { to: "/tags", icon: Tags, key: "nav.tags" },
+];
+
+const ai = [
+  { to: "/analyze", icon: Brain, label: "智能分析" },
+  { to: "/ai-providers", icon: Bot, label: "AI 模型" },
 ];
 
 const tools = [
@@ -58,6 +65,12 @@ export function Sidebar() {
             <Item key={it.to} {...it} label={t(it.key as string)} />
           ))}
         </div>
+
+        <Section label="AI">
+          {ai.map((it) => (
+            <Item key={it.to} {...it} label={(it as any).label} />
+          ))}
+        </Section>
 
         <Section label="工具">
           {tools.map((it) => (

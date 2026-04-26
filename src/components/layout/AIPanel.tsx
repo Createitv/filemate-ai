@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Send, Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Send, Sparkles, Loader2, AlertCircle, Settings as SettingsIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import * as api from "@/api";
 import type { ChatMessage } from "@/api/types";
@@ -8,19 +9,22 @@ import { cn } from "@/lib/utils";
 
 export function AIPanel() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "你好！我是 FileMate AI 助手。可以帮你搜索、整理、分析文件。" },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [healthy, setHealthy] = useState<boolean | null>(null);
+  const [health, setHealth] = useState<{ ok: boolean; provider?: string; model?: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api
       .aiHealth()
-      .then((h) => setHealthy(!!h?.ok))
-      .catch(() => setHealthy(false));
+      .then((h) =>
+        setHealth({ ok: !!h?.ok, provider: h?.active_provider, model: h?.model })
+      )
+      .catch(() => setHealth({ ok: false }));
   }, []);
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export function AIPanel() {
         ...m,
         {
           role: "assistant",
-          content: `调用 AI 失败：${e?.message || e}\n\n请确认本机已运行 \`ollama serve\`，或在「设置 → AI」中配置 OLLAMA_HOST。`,
+          content: `调用 AI 失败：${e?.message || e}\n\n请到「AI 模型」中配置一个模型并设为激活（DeepSeek / OpenAI / Claude / Ollama 等）。`,
         },
       ]);
     } finally {
@@ -59,16 +63,22 @@ export function AIPanel() {
           <Sparkles className="w-4 h-4 text-primary" />
         </div>
         <span className="font-medium">{t("ai.panel_title")}</span>
-        <span className="ml-auto flex items-center gap-1 text-[10px]">
+<span className="ml-auto flex items-center gap-1 text-[10px]">
           <span
             className={cn(
               "w-1.5 h-1.5 rounded-full",
-              healthy === true ? "bg-emerald-500" : healthy === false ? "bg-rose-500" : "bg-amber-500"
+              health?.ok ? "bg-emerald-500" : health ? "bg-rose-500" : "bg-amber-500"
             )}
           />
-          <span className="text-muted-foreground">
-            {healthy === true ? "Ollama 已连接" : healthy === false ? "Ollama 未启动" : "..."}
-          </span>
+          <button
+            onClick={() => navigate("/ai-providers")}
+            className="text-muted-foreground hover:text-primary"
+          >
+            {health?.ok ? `${health.provider} · ${health.model}` : "未配置"}
+          </button>
+          <button onClick={() => navigate("/ai-providers")} className="ml-1 text-muted-foreground hover:text-primary">
+            <SettingsIcon className="w-3 h-3" />
+          </button>
         </span>
       </div>
 
@@ -107,13 +117,17 @@ export function AIPanel() {
             </div>
           </>
         )}
-        {healthy === false && (
+{health && !health.ok && (
           <div className="rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300 flex gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div>
-              本地 Ollama 服务未启动。在终端运行
-              <code className="mx-1 px-1.5 py-0.5 rounded bg-amber-500/20">ollama serve</code>
-              后重试。
+            <div className="flex-1">
+              还没有激活的 AI 模型。
+              <button
+                onClick={() => navigate("/ai-providers")}
+                className="ml-1 underline font-medium"
+              >
+                去配置 →
+              </button>
             </div>
           </div>
         )}

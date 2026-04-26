@@ -21,6 +21,9 @@ import type {
   PreviewMeta,
   FsEvent,
   DirEntryInfo,
+  AIProvider,
+  FolderStats,
+  AnalyzeResult,
 } from "./types";
 
 // ---------- fs ----------
@@ -125,20 +128,41 @@ export const deleteVersion = (path: string, versionId: number) =>
   invoke<void>("delete_version", { path, versionId });
 
 // ---------- ai ----------
-export const aiChat = (messages: ChatMessage[], model?: string) =>
-  invoke<ChatMessage>("ai_chat", { messages, model });
+export const aiChat = (messages: ChatMessage[], providerId?: string) =>
+  invoke<ChatMessage>("ai_chat", { messages, providerId });
 export const aiChatStream = (
   sessionId: string,
   messages: ChatMessage[],
-  model?: string
-) => invoke<void>("ai_chat_stream", { sessionId, messages, model });
-export const aiEmbed = (text: string, model?: string) =>
-  invoke<number[]>("ai_embed", { text, model });
+  providerId?: string
+) => invoke<void>("ai_chat_stream", { sessionId, messages, providerId });
+export const aiEmbed = (text: string, providerId?: string) =>
+  invoke<number[]>("ai_embed", { text, providerId });
 export const aiParseIntent = (query: string) =>
   invoke<any>("ai_parse_intent", { query });
 export const aiHealth = () => invoke<any>("ai_health");
-export const onAiChunk = (cb: (chunk: any) => void) =>
-  listen<any>("ai:chat_chunk", (e) => cb(e.payload));
+export const onAiChunk = (cb: (payload: { session_id: string; delta: string }) => void) =>
+  listen<{ session_id: string; delta: string }>("ai:chat_chunk", (e) => cb(e.payload));
+export const onAiDone = (cb: (payload: { session_id: string; content: string }) => void) =>
+  listen<{ session_id: string; content: string }>("ai:chat_done", (e) => cb(e.payload));
+
+// ---------- ai providers ----------
+export const aiProviderSave = (payload: Partial<AIProvider> & { name: string; kind: string; base_url: string; model: string }) =>
+  invoke<string>("ai_provider_save", { payload });
+export const aiProviderList = () => invoke<AIProvider[]>("ai_provider_list");
+export const aiProviderDelete = (id: string) =>
+  invoke<void>("ai_provider_delete", { id });
+export const aiProviderSetActive = (id: string) =>
+  invoke<void>("ai_provider_set_active", { id });
+export const aiProviderTest = (payload: any) =>
+  invoke<any>("ai_provider_test", { payload });
+
+// ---------- folder analysis ----------
+export const analyzeFolderSummary = (path: string) =>
+  invoke<FolderStats>("analyze_folder_summary", { path });
+export const analyzeFolder = (path: string, providerId?: string) =>
+  invoke<AnalyzeResult>("analyze_folder", { path, providerId });
+export const analyzeFolderStream = (sessionId: string, path: string, providerId?: string) =>
+  invoke<FolderStats>("analyze_folder_stream", { sessionId, path, providerId });
 
 // ---------- cloud ----------
 export const addCloudAccount = (provider: string, name: string, config: any) =>

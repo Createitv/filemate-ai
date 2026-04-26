@@ -4,6 +4,7 @@
 // every #[tauri::command] handler the frontend can call.
 
 mod ai;
+mod ai_analyze;
 mod archive;
 mod automation;
 mod batch;
@@ -130,6 +131,14 @@ pub fn run() {
             ai::ai_embed,
             ai::ai_parse_intent,
             ai::ai_health,
+            ai::ai_provider_save,
+            ai::ai_provider_list,
+            ai::ai_provider_delete,
+            ai::ai_provider_set_active,
+            ai::ai_provider_test,
+            ai_analyze::analyze_folder_summary,
+            ai_analyze::analyze_folder,
+            ai_analyze::analyze_folder_stream,
             // cloud
             cloud::add_cloud_account,
             cloud::list_cloud_accounts,

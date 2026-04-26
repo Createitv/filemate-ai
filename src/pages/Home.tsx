@@ -37,7 +37,7 @@ export default function Home() {
 
   const aiCards = [
     { icon: Sparkles, title: t("home.ai_search"), desc: t("home.ai_search_desc"), to: "/search", color: "from-blue-500 to-cyan-500" },
-    { icon: Wand2, title: t("home.auto_tidy"), desc: t("home.auto_tidy_desc"), to: "/automation", color: "from-violet-500 to-fuchsia-500" },
+    { icon: Wand2, title: t("home.auto_tidy"), desc: t("home.auto_tidy_desc"), to: "/analyze", color: "from-violet-500 to-fuchsia-500" },
     { icon: History, title: t("home.version_history"), desc: t("home.version_history_desc"), to: "/files", color: "from-emerald-500 to-teal-500" },
     { icon: Eye, title: t("home.preview"), desc: t("home.preview_desc"), to: "/preview", color: "from-amber-500 to-orange-500" },
   ];

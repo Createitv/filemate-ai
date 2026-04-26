@@ -1,28 +1,29 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { ACCENT_PRESETS, useThemeStore, type ThemeMode } from "@/stores/theme";
 import { SUPPORTED_LANGS } from "@/i18n";
-import { Sun, Moon, Monitor, Check } from "lucide-react";
+import { Sun, Moon, Monitor, Check, ChevronRight } from "lucide-react";
 import * as api from "@/api";
-import { toast, toastError } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { mode, accent, setMode, setAccent } = useThemeStore();
-  const [ollamaHost, setOllamaHost] = useState("");
   const [version, setVersion] = useState("");
+  const [activeProvider, setActiveProvider] = useState<string>("");
 
   useEffect(() => {
-    api.getSetting<string>("ollama_host").then((v) => v && setOllamaHost(v));
     api.appVersion().then(setVersion).catch(() => {});
+    api
+      .aiHealth()
+      .then((h) => h?.ok && setActiveProvider(`${h.active_provider} · ${h.model}`))
+      .catch(() => {});
   }, []);
 
-  // persist theme + language to backend on change
   useEffect(() => {
     api.setSetting("theme.mode", mode).catch(() => {});
     api.setSetting("theme.accent", accent).catch(() => {});
@@ -36,15 +37,6 @@ export default function Settings() {
     { id: "dark", label: t("settings.theme_dark"), icon: Moon },
     { id: "system", label: t("settings.theme_system"), icon: Monitor },
   ];
-
-  const saveOllama = async () => {
-    try {
-      await api.setSetting("ollama_host", ollamaHost);
-      toast("已保存", "success");
-    } catch (e) {
-      toastError(e);
-    }
-  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -122,18 +114,21 @@ export default function Settings() {
           <CardHeader>
             <CardTitle>{t("settings.ai")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-xs text-muted-foreground">
-              FileMate 默认连接本地 <code>http://127.0.0.1:11434</code> 上的 Ollama 服务。如需自定义，可在此填写并重启应用。
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="http://127.0.0.1:11434"
-                value={ollamaHost}
-                onChange={(e) => setOllamaHost(e.target.value)}
-              />
-              <Button onClick={saveOllama}>保存</Button>
-            </div>
+          <CardContent>
+            <button
+              onClick={() => navigate("/ai-providers")}
+              className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:bg-accent/40"
+            >
+              <div className="text-left">
+                <div className="font-medium text-sm">AI 模型管理</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {activeProvider
+                    ? `当前激活：${activeProvider}`
+                    : "添加 DeepSeek / OpenAI / Claude / Ollama 等模型"}
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
           </CardContent>
         </Card>
 
