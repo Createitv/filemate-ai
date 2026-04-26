@@ -36,10 +36,10 @@ export default function Home() {
   }, []);
 
   const aiCards = [
-    { icon: Sparkles, title: t("home.ai_search"), desc: t("home.ai_search_desc"), to: "/search", color: "from-blue-500 to-cyan-500" },
-    { icon: Wand2, title: t("home.auto_tidy"), desc: t("home.auto_tidy_desc"), to: "/analyze", color: "from-violet-500 to-fuchsia-500" },
-    { icon: History, title: t("home.version_history"), desc: t("home.version_history_desc"), to: "/files", color: "from-emerald-500 to-teal-500" },
-    { icon: Eye, title: t("home.preview"), desc: t("home.preview_desc"), to: "/preview", color: "from-amber-500 to-orange-500" },
+    { icon: Sparkles, title: t("home.ai_search"), desc: t("home.ai_search_desc"), to: "/search" },
+    { icon: Wand2, title: t("home.auto_tidy"), desc: t("home.auto_tidy_desc"), to: "/analyze" },
+    { icon: History, title: t("home.version_history"), desc: t("home.version_history_desc"), to: "/files" },
+    { icon: Eye, title: t("home.preview"), desc: t("home.preview_desc"), to: "/preview" },
   ];
 
   const primary = disks[0];
@@ -66,8 +66,8 @@ export default function Home() {
                   className="p-4 cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => navigate(c.to)}
                 >
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center mb-3`}>
-                    <c.icon className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mb-3">
+                    <c.icon className="w-5 h-5 text-primary-foreground" />
                   </div>
                   <div className="font-medium text-sm">{c.title}</div>
                   <div className="text-xs text-muted-foreground mt-1 leading-relaxed">{c.desc}</div>

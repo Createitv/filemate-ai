@@ -184,8 +184,8 @@ function Tile({ entry }: { entry: DirEntryInfo }) {
   }
   if (mime.startsWith("audio/")) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-500 to-fuchsia-500">
-        <Music className="w-10 h-10 text-white/80" />
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/60">
+        <Music className="w-10 h-10 text-primary-foreground/80" />
       </div>
     );
   }

@@ -12,11 +12,11 @@ import { formatBytes, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const PROVIDERS = [
-  { id: "s3", name: "Amazon S3 / S3 兼容", color: "from-amber-500 to-orange-500" },
-  { id: "onedrive", name: "OneDrive", color: "from-blue-500 to-cyan-500" },
-  { id: "gdrive", name: "Google Drive", color: "from-green-500 to-emerald-500" },
-  { id: "dropbox", name: "Dropbox", color: "from-blue-600 to-blue-400" },
-  { id: "webdav", name: "WebDAV / Nextcloud", color: "from-violet-500 to-purple-500" },
+  { id: "s3", name: "Amazon S3 / S3 兼容" },
+  { id: "onedrive", name: "OneDrive" },
+  { id: "gdrive", name: "Google Drive" },
+  { id: "dropbox", name: "Dropbox" },
+  { id: "webdav", name: "WebDAV / Nextcloud" },
 ];
 
 export default function Cloud() {
@@ -83,7 +83,7 @@ export default function Cloud() {
                 onClick={() => setShowAdd(p.id)}
                 className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm hover:bg-accent/40"
               >
-                <div className={`w-5 h-5 rounded bg-gradient-to-br ${p.color}`} />
+                <div className="w-5 h-5 rounded bg-gradient-to-br from-primary to-primary/60" />
                 <span className="flex-1 text-left">{p.name}</span>
                 <Plus className="w-3 h-3 text-muted-foreground" />
               </button>

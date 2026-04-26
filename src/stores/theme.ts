@@ -10,12 +10,15 @@ export interface AccentPreset {
 }
 
 export const ACCENT_PRESETS: AccentPreset[] = [
-  { id: "blue", name: "Ocean Blue", hsl: "220 90% 56%" },
-  { id: "violet", name: "Royal Violet", hsl: "262 83% 58%" },
-  { id: "rose", name: "Rose Pink", hsl: "346 77% 60%" },
-  { id: "emerald", name: "Emerald", hsl: "160 84% 39%" },
-  { id: "amber", name: "Sunset Amber", hsl: "38 92% 50%" },
-  { id: "slate", name: "Graphite", hsl: "215 25% 27%" },
+  { id: "blue",    name: "海洋蓝",   hsl: "220 90% 56%" },
+  { id: "indigo",  name: "靛青",     hsl: "239 84% 60%" },
+  { id: "violet",  name: "皇家紫",   hsl: "262 83% 58%" },
+  { id: "pink",    name: "樱花粉",   hsl: "330 81% 60%" },
+  { id: "rose",    name: "玫瑰红",   hsl: "346 77% 55%" },
+  { id: "orange",  name: "活力橙",   hsl: "20 90% 55%" },
+  { id: "amber",   name: "落日琥珀", hsl: "38 92% 50%" },
+  { id: "emerald", name: "翡翠绿",   hsl: "160 84% 39%" },
+  { id: "slate",   name: "石墨灰",   hsl: "215 25% 27%" },
 ];
 
 interface ThemeState {

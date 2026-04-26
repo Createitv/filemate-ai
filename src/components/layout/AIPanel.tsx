@@ -1,15 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Send, Sparkles, Loader2, AlertCircle, Settings as SettingsIcon } from "lucide-react";
+import {
+  Send,
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  Settings as SettingsIcon,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import * as api from "@/api";
 import type { ChatMessage } from "@/api/types";
 import { cn } from "@/lib/utils";
+import { useLayoutStore } from "@/stores/layout";
 
 export function AIPanel() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const collapsed = useLayoutStore((s) => s.aiPanelCollapsed);
+  const toggle = useLayoutStore((s) => s.toggleAiPanel);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "你好！我是 FileMate AI 助手。可以帮你搜索、整理、分析文件。" },
   ]);
@@ -17,6 +28,30 @@ export function AIPanel() {
   const [busy, setBusy] = useState(false);
   const [health, setHealth] = useState<{ ok: boolean; provider?: string; model?: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  if (collapsed) {
+    return (
+      <aside className="relative w-9 shrink-0 border-l border-border/60 bg-gradient-to-b from-accent/40 to-background flex flex-col items-center pt-3 gap-2">
+        <button
+          onClick={toggle}
+          title="展开 AI 助手"
+          className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20"
+        >
+          <Sparkles className="w-4 h-4" />
+        </button>
+        <button
+          onClick={toggle}
+          className="w-6 h-6 rounded-full border border-border bg-card shadow flex items-center justify-center hover:bg-accent/60"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+        <div
+          onClick={toggle}
+          className="absolute top-16 -left-3 z-10 cursor-pointer"
+        />
+      </aside>
+    );
+  }
 
   useEffect(() => {
     api
@@ -57,7 +92,14 @@ export function AIPanel() {
   const suggestions = [t("ai.q1"), t("ai.q2"), t("ai.q3"), t("ai.q4")];
 
   return (
-    <aside className="w-80 shrink-0 border-l border-border/60 bg-gradient-to-b from-accent/40 to-background flex flex-col">
+    <aside className="relative w-80 shrink-0 border-l border-border/60 bg-gradient-to-b from-accent/40 to-background flex flex-col">
+      <button
+        onClick={toggle}
+        title="收起 AI 助手"
+        className="absolute -left-3 top-16 z-30 w-6 h-6 rounded-full border border-border bg-card shadow flex items-center justify-center hover:bg-accent/60"
+      >
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
       <div className="px-5 py-4 flex items-center gap-2 border-b border-border/40">
         <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
           <Sparkles className="w-4 h-4 text-primary" />
