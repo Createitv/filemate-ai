@@ -1,6 +1,6 @@
 [package]
 name = "filemate-ai"
-version = "0.1.5"
+version = "0.1.6"
 description = "FileMate AI — smarter file management"
 authors = ["FileMate AI"]
 edition = "2021"
