@@ -203,6 +203,159 @@ fn scan_windows() -> Vec<AppInfo> {
 }
 
 #[tauri::command]
+pub async fn get_app_icon(app_id: String) -> AppResult<Option<String>> {
+    tokio::task::spawn_blocking(move || -> AppResult<Option<String>> {
+        Ok(resolve_app_icon(&app_id))
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?
+}
+
+fn resolve_app_icon(_id: &str) -> Option<String> {
+    #[cfg(target_os = "macos")]
+    {
+        return macos_icon(_id);
+    }
+    #[cfg(target_os = "linux")]
+    {
+        return linux_icon(_id);
+    }
+    #[allow(unreachable_code)]
+    None
+}
+
+#[cfg(target_os = "macos")]
+fn macos_icon(app_path: &str) -> Option<String> {
+    let bundle = Path::new(app_path);
+    let resources = bundle.join("Contents/Resources");
+    if !resources.is_dir() {
+        return None;
+    }
+
+    // Prefer the icon referenced by Info.plist; fall back to any .icns.
+    let icns = read_plist_icon(&bundle.join("Contents/Info.plist"))
+        .and_then(|name| {
+            let p = if name.ends_with(".icns") {
+                resources.join(&name)
+            } else {
+                resources.join(format!("{name}.icns"))
+            };
+            if p.is_file() { Some(p) } else { None }
+        })
+        .or_else(|| first_icns(&resources))?;
+
+    // sips ships with macOS — convert to a small PNG.
+    let tmp = std::env::temp_dir().join(format!(
+        "filemate_icon_{}.png",
+        std::process::id()
+    ));
+    let out = Command::new("sips")
+        .args(["-s", "format", "png", "-Z", "64"])
+        .arg(&icns)
+        .arg("--out")
+        .arg(&tmp)
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let bytes = std::fs::read(&tmp).ok()?;
+    let _ = std::fs::remove_file(&tmp);
+    Some(encode_data_url("image/png", &bytes))
+}
+
+#[cfg(target_os = "macos")]
+fn read_plist_icon(plist: &Path) -> Option<String> {
+    let raw = std::fs::read(plist).ok()?;
+    // Quick-and-dirty XML scan; works for the standard text plist.
+    let s = std::str::from_utf8(&raw).ok()?;
+    let key = s.find("<key>CFBundleIconFile</key>")?;
+    let after = &s[key..];
+    let start = after.find("<string>")? + "<string>".len();
+    let end = after[start..].find("</string>")?;
+    Some(after[start..start + end].trim().to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn first_icns(resources: &Path) -> Option<std::path::PathBuf> {
+    std::fs::read_dir(resources)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .find(|p| p.extension().and_then(|s| s.to_str()) == Some("icns"))
+}
+
+#[cfg(target_os = "linux")]
+fn linux_icon(desktop_path: &str) -> Option<String> {
+    let content = std::fs::read_to_string(desktop_path).ok()?;
+    let mut icon = None;
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('[') && line != "[Desktop Entry]" {
+            break;
+        }
+        if let Some(v) = line.strip_prefix("Icon=") {
+            icon = Some(v.to_string());
+            break;
+        }
+    }
+    let icon = icon?;
+    let path = if Path::new(&icon).is_absolute() && Path::new(&icon).is_file() {
+        std::path::PathBuf::from(&icon)
+    } else {
+        find_themed_icon(&icon)?
+    };
+    let bytes = std::fs::read(&path).ok()?;
+    let mime = match path.extension().and_then(|s| s.to_str()) {
+        Some("svg") => "image/svg+xml",
+        Some("xpm") => "image/x-xpixmap",
+        _ => "image/png",
+    };
+    Some(encode_data_url(mime, &bytes))
+}
+
+#[cfg(target_os = "linux")]
+fn find_themed_icon(name: &str) -> Option<std::path::PathBuf> {
+    let mut roots: Vec<std::path::PathBuf> = vec![
+        std::path::PathBuf::from("/usr/share/icons/hicolor"),
+        std::path::PathBuf::from("/usr/share/icons"),
+    ];
+    if let Some(home) = dirs::home_dir() {
+        roots.push(home.join(".local/share/icons/hicolor"));
+        roots.push(home.join(".icons"));
+    }
+    let sizes = ["64x64", "128x128", "48x48", "256x256", "scalable", "32x32"];
+    let exts = ["png", "svg", "xpm"];
+    for root in &roots {
+        for size in &sizes {
+            for ext in &exts {
+                let p = root.join(size).join("apps").join(format!("{name}.{ext}"));
+                if p.is_file() {
+                    return Some(p);
+                }
+            }
+        }
+    }
+    for ext in &exts {
+        let p = std::path::Path::new("/usr/share/pixmaps").join(format!("{name}.{ext}"));
+        if p.is_file() {
+            return Some(p);
+        }
+    }
+    None
+}
+
+#[allow(dead_code)]
+fn encode_data_url(mime: &str, bytes: &[u8]) -> String {
+    use base64::Engine;
+    format!(
+        "data:{};base64,{}",
+        mime,
+        base64::engine::general_purpose::STANDARD.encode(bytes)
+    )
+}
+
+#[tauri::command]
 pub async fn open_with(path: String, app_id: String) -> AppResult<()> {
     #[cfg(target_os = "macos")]
     {

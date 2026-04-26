@@ -11,6 +11,66 @@ import type { AppInfo } from "@/api/types";
 import { Input } from "@/components/ui/input";
 import { toastError } from "@/components/ui/toast";
 
+// Module-scoped cache so icons persist across reopen / Panel <-> DialogBody.
+const iconCache = new Map<string, string | null>();
+const inflight = new Map<string, Promise<string | null>>();
+
+function fetchIcon(id: string): Promise<string | null> {
+  if (iconCache.has(id)) return Promise.resolve(iconCache.get(id) ?? null);
+  const existing = inflight.get(id);
+  if (existing) return existing;
+  const p = api
+    .getAppIcon(id)
+    .then((v) => {
+      iconCache.set(id, v ?? null);
+      inflight.delete(id);
+      return v ?? null;
+    })
+    .catch(() => {
+      iconCache.set(id, null);
+      inflight.delete(id);
+      return null;
+    });
+  inflight.set(id, p);
+  return p;
+}
+
+function AppIcon({ app, size = 20 }: { app: AppInfo; size?: number }) {
+  const [src, setSrc] = useState<string | null>(() => iconCache.get(app.id) ?? null);
+  useEffect(() => {
+    let active = true;
+    if (!iconCache.has(app.id)) {
+      fetchIcon(app.id).then((v) => {
+        if (active) setSrc(v);
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, [app.id]);
+  const dim = { width: size, height: size };
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        style={dim}
+        className="rounded shrink-0 object-contain"
+      />
+    );
+  }
+  return (
+    <span
+      style={dim}
+      className="rounded bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center uppercase font-bold text-primary shrink-0"
+    >
+      <span style={{ fontSize: Math.max(9, Math.round(size * 0.5)) }}>
+        {app.name[0]}
+      </span>
+    </span>
+  );
+}
+
 export function OpenWithMenu({
   path,
   className,
@@ -156,9 +216,7 @@ function Panel({
             onClick={() => launch(a)}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent/60"
           >
-            <span className="w-5 h-5 rounded bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center text-[10px] uppercase font-bold text-primary shrink-0">
-              {a.name[0]}
-            </span>
+            <AppIcon app={a} size={20} />
             <span className="flex-1 text-left truncate">{a.name}</span>
           </button>
         ))}
@@ -267,9 +325,7 @@ function DialogBody({ path, onClose }: { path: string; onClose: () => void }) {
             }}
             className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent/60"
           >
-            <span className="w-6 h-6 rounded bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center text-xs uppercase font-bold text-primary shrink-0">
-              {a.name[0]}
-            </span>
+            <AppIcon app={a} size={24} />
             <span className="flex-1 text-left truncate">{a.name}</span>
             <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
               {a.path}

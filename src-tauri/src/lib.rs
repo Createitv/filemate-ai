@@ -80,6 +80,7 @@ pub fn run() {
             fs::metadata,
             fs::open_path,
             open_with::list_installed_apps,
+            open_with::get_app_icon,
             open_with::open_with,
             open_with::open_with_dialog,
             open_with::reveal_in_folder,

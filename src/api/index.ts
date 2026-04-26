@@ -49,6 +49,8 @@ export const openPath = (path: string) => invoke<void>("open_path", { path });
 // ---------- open with ----------
 export const listInstalledApps = () =>
   invoke<import("./types").AppInfo[]>("list_installed_apps");
+export const getAppIcon = (appId: string) =>
+  invoke<string | null>("get_app_icon", { appId });
 export const openWith = (path: string, appId: string) =>
   invoke<void>("open_with", { path, appId });
 export const openWithDialog = (path: string) =>
