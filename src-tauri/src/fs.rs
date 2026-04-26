@@ -97,6 +97,37 @@ pub async fn home_dir() -> AppResult<String> {
         .to_string())
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserDir {
+    pub name: String,
+    pub path: String,
+    pub kind: String, // home | desktop | download | document | picture | video | audio
+}
+
+#[tauri::command]
+pub async fn list_user_dirs() -> AppResult<Vec<UserDir>> {
+    let mut out = Vec::new();
+    let push = |out: &mut Vec<UserDir>, name: &str, kind: &str, p: Option<PathBuf>| {
+        if let Some(p) = p {
+            if p.exists() {
+                out.push(UserDir {
+                    name: name.into(),
+                    path: p.to_string_lossy().to_string(),
+                    kind: kind.into(),
+                });
+            }
+        }
+    };
+    push(&mut out, "主目录", "home", dirs::home_dir());
+    push(&mut out, "桌面", "desktop", dirs::desktop_dir());
+    push(&mut out, "下载", "download", dirs::download_dir());
+    push(&mut out, "文档", "document", dirs::document_dir());
+    push(&mut out, "图片", "picture", dirs::picture_dir());
+    push(&mut out, "视频", "video", dirs::video_dir());
+    push(&mut out, "音乐", "audio", dirs::audio_dir());
+    Ok(out)
+}
+
 #[tauri::command]
 pub async fn create_folder(path: String, name: String) -> AppResult<String> {
     let target = Path::new(&path).join(&name);

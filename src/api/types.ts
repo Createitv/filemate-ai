@@ -19,6 +19,12 @@ export interface DirListing {
   entries: DirEntryInfo[];
 }
 
+export interface UserDir {
+  name: string;
+  path: string;
+  kind: "home" | "desktop" | "download" | "document" | "picture" | "video" | "audio";
+}
+
 export interface DiskInfo {
   name: string;
   mount_point: string;

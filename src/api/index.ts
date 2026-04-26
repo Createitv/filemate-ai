@@ -30,6 +30,8 @@ import type {
 export const listDir = (path: string, showHidden = false) =>
   invoke<DirListing>("list_dir", { path, showHidden });
 export const homeDir = () => invoke<string>("home_dir");
+export const listUserDirs = () =>
+  invoke<import("./types").UserDir[]>("list_user_dirs");
 export const createFolder = (path: string, name: string) =>
   invoke<string>("create_folder", { path, name });
 export const renameEntry = (from: string, to: string) =>

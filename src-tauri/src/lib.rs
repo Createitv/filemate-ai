@@ -71,6 +71,7 @@ pub fn run() {
             // fs
             fs::list_dir,
             fs::home_dir,
+            fs::list_user_dirs,
             fs::create_folder,
             fs::rename_entry,
             fs::delete_to_trash,

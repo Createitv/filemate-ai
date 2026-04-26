@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Folder,
@@ -80,12 +81,20 @@ export default function Files() {
     }
   }, [historyIdx]);
 
-  // initial load + fs event subscription
+  const [searchParams] = useSearchParams();
+  const queryPath = searchParams.get("path");
+
+  // initial load + react to ?path= changes
   useEffect(() => {
-    api
-      .homeDir()
-      .then((p) => navigate(p))
-      .catch(toastError);
+    if (queryPath) {
+      navigate(queryPath);
+    } else if (!path) {
+      api.homeDir().then((p) => navigate(p)).catch(toastError);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryPath]);
+
+  useEffect(() => {
     let unlisten: any = null;
     api.onFsEvent(() => {
       // simple refresh on any event in current dir
