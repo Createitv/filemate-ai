@@ -20,6 +20,7 @@ import AIProviders from "@/pages/AIProviders";
 import Analyze from "@/pages/Analyze";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { ToastViewport } from "@/components/ui/toast";
+import { QuickLook } from "@/components/preview/QuickLook";
 
 export default function App() {
   const theme = useThemeStore();
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      <QuickLook />
       <ToastViewport />
     </>
   );

@@ -37,6 +37,7 @@ import { fileIconColor, formatBytes, formatTime } from "@/lib/format";
 import * as api from "@/api";
 import type { DirEntryInfo, DirListing } from "@/api/types";
 import { toast, toastError } from "@/components/ui/toast";
+import { useQuickLook } from "@/components/preview/useQuickLook";
 
 interface Clipboard {
   paths: string[];
@@ -98,6 +99,37 @@ export default function Files() {
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, []);
+
+  // Space → QuickLook on the currently selected (or first selected) file
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key !== " ") return;
+      if (!listing) return;
+      const ql = useQuickLook.getState();
+      if (ql.visible) return; // QuickLook handles its own space-to-close
+      e.preventDefault();
+      const visibleEntries = listing.entries;
+      const selectedFiles = visibleEntries.filter(
+        (x) => selected.has(x.path) && !x.is_dir
+      );
+      const items =
+        selectedFiles.length > 0
+          ? selectedFiles
+          : visibleEntries.filter((x) => !x.is_dir);
+      if (items.length === 0) return;
+      const startIdx =
+        selectedFiles.length > 0
+          ? items.findIndex((x) => x.path === selectedFiles[0].path)
+          : 0;
+      ql.open(
+        items.map((x) => ({ path: x.path, name: x.name, is_dir: x.is_dir })),
+        Math.max(0, startIdx)
+      );
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [listing, selected]);
 
   const goUp = () => {
     if (listing?.parent) navigate(listing.parent);
@@ -312,9 +344,14 @@ export default function Files() {
               case "open":
                 onActivate(ctx.target);
                 break;
-              case "preview":
-                api.openPath(ctx.target.path).catch(toastError);
+              case "preview": {
+                const items = (listing?.entries || [])
+                  .filter((x) => !x.is_dir)
+                  .map((x) => ({ path: x.path, name: x.name, is_dir: x.is_dir }));
+                const idx = items.findIndex((x) => x.path === ctx.target.path);
+                useQuickLook.getState().open(items, Math.max(0, idx));
                 break;
+              }
               case "copy":
                 doCopy("copy");
                 break;

@@ -118,13 +118,92 @@ export interface ChatMessage {
   content: string;
 }
 
+// ---------- preview ----------
+
+export type PreviewKind =
+  | "image"
+  | "raw"
+  | "psd"
+  | "svg"
+  | "video"
+  | "audio"
+  | "font"
+  | "archive"
+  | "model3d"
+  | "markdown"
+  | "pdf"
+  | "office"
+  | "code"
+  | "text"
+  | "binary";
+
+export interface ExifEntry {
+  tag: string;
+  group: string;
+  value: string;
+}
+
+export interface Histogram {
+  r: number[];
+  g: number[];
+  b: number[];
+  luminance: number[];
+}
+
+export interface ImageMeta {
+  width: number;
+  height: number;
+  color: string;
+  exif: ExifEntry[];
+  histogram: Histogram;
+}
+
+export interface AudioMeta {
+  title?: string;
+  artist?: string;
+  album?: string;
+  album_artist?: string;
+  year?: number;
+  track?: number;
+  genre?: string;
+  duration_ms: number;
+  bitrate?: number;
+  sample_rate?: number;
+  channels?: number;
+  format: string;
+}
+
+export interface FontMeta {
+  family?: string;
+  subfamily?: string;
+  full_name?: string;
+  version?: string;
+  copyright?: string;
+  manufacturer?: string;
+  designer?: string;
+  format: string;
+  num_glyphs?: number;
+}
+
+export type FormatExtras =
+  | { kind: "none" }
+  | ({ kind: "image" } & ImageMeta)
+  | ({ kind: "audio" } & AudioMeta)
+  | ({ kind: "font" } & FontMeta);
+
 export interface PreviewMeta {
-  kind: "image" | "video" | "audio" | "text" | "code" | "markdown" | "pdf" | "archive" | "binary" | "unknown";
+  kind: PreviewKind;
   mime?: string;
   size: number;
+  modified?: number;
+  created?: number;
+  extension?: string;
   text?: string;
   language?: string;
+  extras: FormatExtras;
 }
+
+// ---------- ai ----------
 
 export type AIProviderKind = "openai" | "anthropic" | "ollama";
 

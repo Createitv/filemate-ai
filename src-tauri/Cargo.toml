@@ -56,6 +56,11 @@ unicode-segmentation = "1"
 # diff / version
 similar = "2"
 
+# preview
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp", "bmp", "tiff", "ico"] }
+kamadak-exif = "0.5"
+lofty = "0.21"
+
 # crypto
 aes-gcm = "0.10"
 argon2 = "0.5"
