@@ -220,8 +220,42 @@ fn resolve_app_icon(_id: &str) -> Option<String> {
     {
         return linux_icon(_id);
     }
+    #[cfg(target_os = "windows")]
+    {
+        return windows_icon(_id);
+    }
     #[allow(unreachable_code)]
     None
+}
+
+#[cfg(target_os = "windows")]
+fn windows_icon(exe_path: &str) -> Option<String> {
+    // Use PowerShell + System.Drawing to extract the executable's associated
+    // icon and emit a base64 PNG. PowerShell ships with every modern Windows.
+    let script = format!(
+        r#"$ErrorActionPreference='Stop';
+Add-Type -AssemblyName System.Drawing;
+$ico = [System.Drawing.Icon]::ExtractAssociatedIcon('{}');
+if ($ico -eq $null) {{ exit 1 }};
+$bmp = $ico.ToBitmap();
+$ms = New-Object System.IO.MemoryStream;
+$bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png);
+[Convert]::ToBase64String($ms.ToArray())"#,
+        exe_path.replace('\'', "''")
+    );
+    let out = Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-Command"])
+        .arg(&script)
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let b64 = std::str::from_utf8(&out.stdout).ok()?.trim();
+    if b64.is_empty() {
+        return None;
+    }
+    Some(format!("data:image/png;base64,{b64}"))
 }
 
 #[cfg(target_os = "macos")]
