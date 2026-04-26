@@ -1,0 +1,135 @@
+{
+  "app": {
+    "name": "FileMate AI",
+    "tagline": "让文件管理更智能"
+  },
+  "nav": {
+    "home": "首页",
+    "files": "文件",
+    "favorites": "收藏",
+    "search": "搜索",
+    "workspace": "工作区",
+    "ai": "AI 助手",
+    "tags": "标签管理",
+    "automation": "自动化",
+    "preview": "预览",
+    "cloud": "云存储",
+    "trash": "回收站",
+    "settings": "设置"
+  },
+  "cloud": {
+    "title": "云存储",
+    "onedrive": "OneDrive",
+    "gdrive": "Google Drive",
+    "icloud": "iCloud",
+    "s3": "Amazon S3"
+  },
+  "home": {
+    "greeting_morning": "早上好，欢迎回来！",
+    "greeting_afternoon": "下午好，欢迎回来！",
+    "greeting_evening": "晚上好，欢迎回来！",
+    "subtitle": "FileMate AI 让文件管理更智能",
+    "ai_quick": "AI 快捷功能",
+    "ai_search": "AI 智能搜索",
+    "ai_search_desc": "用自然语言找到任意文件",
+    "auto_tidy": "智能整理",
+    "auto_tidy_desc": "AI 自动归档、分类",
+    "version_history": "版本历史",
+    "version_history_desc": "一键找回历史版本",
+    "preview": "增强预览",
+    "preview_desc": "50+ 格式即时预览",
+    "recent_files": "最近文件",
+    "view_all": "查看全部",
+    "storage": "存储统计",
+    "used": "已使用",
+    "total": "总容量",
+    "shortcuts": "快捷工作区",
+    "ws_dev": "开发项目",
+    "ws_design": "设计素材",
+    "ws_docs": "工作文档"
+  },
+  "files": {
+    "title": "文件",
+    "name": "名称",
+    "modified_at": "修改时间",
+    "size": "大小",
+    "type": "类型",
+    "path_placeholder": "搜索或输入路径",
+    "new_folder": "新建文件夹",
+    "upload": "上传",
+    "ctx": {
+      "open": "打开",
+      "open_with": "用其他方式打开",
+      "preview": "预览",
+      "copy": "复制",
+      "cut": "剪切",
+      "paste": "粘贴",
+      "rename": "重命名",
+      "delete": "删除",
+      "compress": "压缩",
+      "tag": "添加标签",
+      "version_history": "查看版本历史",
+      "ai_organize": "AI 智能整理",
+      "properties": "属性"
+    }
+  },
+  "automation": {
+    "title": "自动化",
+    "rule_name": "自动整理下载文件",
+    "enabled": "已启用",
+    "tabs": {
+      "rules": "规则管理",
+      "templates": "模板库",
+      "history": "执行历史"
+    },
+    "trigger": "触发条件",
+    "monitor_folder": "监听文件夹",
+    "file_type": "文件类型",
+    "file_size": "文件大小",
+    "if": "如果",
+    "then": "那么",
+    "action": "执行动作",
+    "move_to": "移动到",
+    "rename_with": "重命名为",
+    "add_tag": "添加标签",
+    "save": "保存规则",
+    "test_run": "测试运行",
+    "templates_title": "模板中心",
+    "history_title": "执行记录"
+  },
+  "preview": {
+    "title": "预览",
+    "tabs": {
+      "all": "全部预览",
+      "pinned": "固定文件",
+      "esc": "ESC 关闭"
+    }
+  },
+  "ai": {
+    "panel_title": "AI 助手",
+    "input_placeholder": "向 AI 提问...",
+    "suggested": "你可以试试这些",
+    "q1": "找出我上周修改过的所有 PPT",
+    "q2": "把下载文件夹里的 PDF 按主题分类",
+    "q3": "找出含有「季度营收」的文档",
+    "q4": "帮我清理超过 180 天没访问的文件"
+  },
+  "settings": {
+    "title": "设置",
+    "appearance": "外观",
+    "theme": "主题模式",
+    "theme_light": "浅色",
+    "theme_dark": "深色",
+    "theme_system": "跟随系统",
+    "accent": "主题色",
+    "language": "语言",
+    "general": "通用",
+    "ai": "AI 设置"
+  },
+  "common": {
+    "search": "搜索",
+    "cancel": "取消",
+    "confirm": "确认",
+    "more": "更多"
+  }
+}

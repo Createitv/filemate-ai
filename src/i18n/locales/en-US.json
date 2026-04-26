@@ -1,0 +1,135 @@
+{
+  "app": {
+    "name": "FileMate AI",
+    "tagline": "Smarter file management"
+  },
+  "nav": {
+    "home": "Home",
+    "files": "Files",
+    "favorites": "Favorites",
+    "search": "Search",
+    "workspace": "Workspaces",
+    "ai": "AI Assistant",
+    "tags": "Tags",
+    "automation": "Automation",
+    "preview": "Preview",
+    "cloud": "Cloud",
+    "trash": "Trash",
+    "settings": "Settings"
+  },
+  "cloud": {
+    "title": "Cloud Storage",
+    "onedrive": "OneDrive",
+    "gdrive": "Google Drive",
+    "icloud": "iCloud",
+    "s3": "Amazon S3"
+  },
+  "home": {
+    "greeting_morning": "Good morning!",
+    "greeting_afternoon": "Good afternoon!",
+    "greeting_evening": "Good evening!",
+    "subtitle": "FileMate AI · smarter file management",
+    "ai_quick": "AI Shortcuts",
+    "ai_search": "Semantic Search",
+    "ai_search_desc": "Find any file with natural language",
+    "auto_tidy": "Smart Tidy",
+    "auto_tidy_desc": "AI auto-archiving and classification",
+    "version_history": "Version History",
+    "version_history_desc": "Instantly restore older versions",
+    "preview": "Rich Preview",
+    "preview_desc": "Preview 50+ formats instantly",
+    "recent_files": "Recent Files",
+    "view_all": "View all",
+    "storage": "Storage",
+    "used": "Used",
+    "total": "Total",
+    "shortcuts": "Workspaces",
+    "ws_dev": "Development",
+    "ws_design": "Design Assets",
+    "ws_docs": "Work Documents"
+  },
+  "files": {
+    "title": "Files",
+    "name": "Name",
+    "modified_at": "Modified",
+    "size": "Size",
+    "type": "Type",
+    "path_placeholder": "Search or type a path",
+    "new_folder": "New Folder",
+    "upload": "Upload",
+    "ctx": {
+      "open": "Open",
+      "open_with": "Open With",
+      "preview": "Preview",
+      "copy": "Copy",
+      "cut": "Cut",
+      "paste": "Paste",
+      "rename": "Rename",
+      "delete": "Delete",
+      "compress": "Compress",
+      "tag": "Add Tag",
+      "version_history": "Version History",
+      "ai_organize": "AI Organize",
+      "properties": "Properties"
+    }
+  },
+  "automation": {
+    "title": "Automation",
+    "rule_name": "Auto-tidy downloads",
+    "enabled": "Enabled",
+    "tabs": {
+      "rules": "Rules",
+      "templates": "Templates",
+      "history": "History"
+    },
+    "trigger": "Trigger",
+    "monitor_folder": "Watch folder",
+    "file_type": "File type",
+    "file_size": "File size",
+    "if": "If",
+    "then": "Then",
+    "action": "Action",
+    "move_to": "Move to",
+    "rename_with": "Rename as",
+    "add_tag": "Add tag",
+    "save": "Save rule",
+    "test_run": "Test run",
+    "templates_title": "Template Library",
+    "history_title": "Run history"
+  },
+  "preview": {
+    "title": "Preview",
+    "tabs": {
+      "all": "All",
+      "pinned": "Pinned",
+      "esc": "ESC to close"
+    }
+  },
+  "ai": {
+    "panel_title": "AI Assistant",
+    "input_placeholder": "Ask AI...",
+    "suggested": "Try asking",
+    "q1": "Find all PPTs I edited last week",
+    "q2": "Categorize PDFs in Downloads by topic",
+    "q3": "Find documents containing 'quarterly revenue'",
+    "q4": "Clean up files not accessed in 180+ days"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_system": "System",
+    "accent": "Accent Color",
+    "language": "Language",
+    "general": "General",
+    "ai": "AI"
+  },
+  "common": {
+    "search": "Search",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "more": "More"
+  }
+}

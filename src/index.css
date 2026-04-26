@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 30% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
+    --accent: 220 90% 96%;
+    --accent-foreground: 220 90% 30%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 220 90% 56%;
+    --sidebar: 220 30% 98%;
+    --sidebar-foreground: 222 30% 25%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 30% 9%;
+    --foreground: 210 40% 98%;
+    --card: 222 25% 12%;
+    --card-foreground: 210 40% 98%;
+    --secondary: 217 30% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 30% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 30% 22%;
+    --accent-foreground: 210 40% 98%;
+    --border: 217 30% 20%;
+    --input: 217 30% 20%;
+    --sidebar: 222 30% 11%;
+    --sidebar-foreground: 210 30% 80%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  * {
+    @apply border-border;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-white/60 dark:bg-white/5;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+}
