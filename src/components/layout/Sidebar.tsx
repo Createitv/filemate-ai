@@ -135,27 +135,7 @@ export function Sidebar() {
           />
         </Section>
 
-        {/* This PC / disks */}
-        {disks.length > 0 && (
-          <Section label="此电脑" collapsed={collapsed}>
-            {disks.map((d) => {
-              const name =
-                d.mount_point === "/"
-                  ? "系统盘"
-                  : d.mount_point.split(/[\\/]/).filter(Boolean).pop() || d.mount_point;
-              return (
-                <DiskRow
-                  key={d.mount_point}
-                  disk={d}
-                  name={name}
-                  onClick={() => goPath(d.mount_point)}
-                  active={isCurrentPath(location, d.mount_point)}
-                  collapsed={collapsed}
-                />
-              );
-            })}
-          </Section>
-        )}
+
 
         {/* Tags */}
         {tags.length > 0 && (
@@ -246,7 +226,47 @@ export function Sidebar() {
         </div>
       </nav>
 
+      <StorageStrip disks={disks} onClick={() => goPath("/")} />
     </aside>
+  );
+}
+
+function StorageStrip({ disks, onClick }: { disks: DiskInfo[]; onClick: () => void }) {
+  if (disks.length === 0) return null;
+  // Use the primary (first) disk for the headline; on macOS that's '/'.
+  const primary = disks[0];
+  const used = primary.used;
+  const total = primary.total;
+  const percent = Math.min(100, Math.max(0, primary.percent));
+  const free = total - used;
+
+  // Color thresholds match the rest of the app.
+  const barColor =
+    percent > 90 ? "bg-rose-500" : percent > 75 ? "bg-amber-500" : "bg-primary";
+
+  return (
+    <button
+      onClick={onClick}
+      title="点击打开系统盘"
+      className="m-2 mt-0 px-3 py-2 rounded-xl bg-card/60 hover:bg-accent/40 border border-border/40 transition-colors text-left"
+    >
+      <div className="flex items-center gap-2">
+        <HardDrive className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        <span className="text-xs font-medium truncate flex-1">存储</span>
+        <span className="text-[10px] tabular-nums text-muted-foreground">
+          {Math.round(percent)}%
+        </span>
+      </div>
+      <div className="mt-1.5 h-1 rounded-full bg-secondary overflow-hidden">
+        <div
+          className={cn("h-full transition-all", barColor)}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <div className="mt-1 text-[10px] text-muted-foreground tabular-nums truncate">
+        可用 {formatBytes(free)} / {formatBytes(total)}
+      </div>
+    </button>
   );
 }
 
@@ -353,62 +373,3 @@ function PathButton({
   );
 }
 
-function DiskRow({
-  disk,
-  name,
-  onClick,
-  active,
-  collapsed,
-}: {
-  disk: DiskInfo;
-  name: string;
-  onClick: () => void;
-  active: boolean;
-  collapsed: boolean;
-}) {
-  if (collapsed) {
-    return (
-      <button
-        onClick={onClick}
-        title={`${name} · ${formatBytes(disk.used)} / ${formatBytes(disk.total)}`}
-        className={cn(
-          "justify-center w-10 h-10 mx-auto flex items-center rounded-lg",
-          active ? "bg-accent" : "hover:bg-accent/60"
-        )}
-      >
-        <HardDrive className="w-4 h-4" />
-      </button>
-    );
-  }
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full text-left px-3 py-1.5 rounded-lg transition-colors",
-        active
-          ? "bg-accent text-accent-foreground"
-          : "hover:bg-accent/60 hover:text-accent-foreground text-sidebar-foreground/80"
-      )}
-    >
-      <div className="flex items-center gap-2.5">
-        <HardDrive className="w-4 h-4 shrink-0" />
-        <span className="truncate text-sm flex-1">{name}</span>
-        <span className="text-[10px] text-muted-foreground tabular-nums">
-          {Math.round(disk.percent)}%
-        </span>
-      </div>
-      <div className="ml-6 mt-1 h-1 rounded-full bg-secondary overflow-hidden">
-        <div
-          className={cn(
-            "h-full transition-all",
-            disk.percent > 90 ? "bg-rose-500" : disk.percent > 75 ? "bg-amber-500" : "bg-primary"
-          )}
-          style={{ width: `${Math.min(100, disk.percent)}%` }}
-        />
-      </div>
-      <div className="ml-6 mt-0.5 text-[10px] text-muted-foreground">
-        {formatBytes(disk.used)} / {formatBytes(disk.total)}
-      </div>
-    </button>
-  );
-}
