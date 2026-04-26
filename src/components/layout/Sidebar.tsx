@@ -26,12 +26,7 @@ import {
   ChevronDown,
   LayoutGrid,
   Brain,
-  Wand2,
-  Eye,
   History,
-  Pencil,
-  Copy,
-  Lock,
   TerminalSquare,
   Bot,
   Wrench,
@@ -54,12 +49,7 @@ const DIR_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const TOOLS = [
-  { to: "/automation", icon: Wand2, label: "自动化" },
-  { to: "/preview", icon: Eye, label: "预览画廊" },
   { to: "/versions", icon: History, label: "版本历史" },
-  { to: "/rename", icon: Pencil, label: "批量重命名" },
-  { to: "/duplicates", icon: Copy, label: "重复文件" },
-  { to: "/encryption", icon: Lock, label: "加密 / 解密" },
   { to: "/terminal", icon: TerminalSquare, label: "终端" },
   { to: "/ai-providers", icon: Bot, label: "AI 模型" },
 ];

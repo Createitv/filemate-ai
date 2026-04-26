@@ -22,7 +22,8 @@ import { TopBar } from "@/components/layout/TopBar";
 import { cn } from "@/lib/utils";
 import * as api from "@/api";
 import type { DiskInfo, RecentEntry, Tag, UserDir } from "@/api/types";
-import { formatBytes, relativeTime, fileIconColor } from "@/lib/format";
+import { formatBytes, relativeTime } from "@/lib/format";
+import { FileIcon } from "@/components/FileIcon";
 
 const QUICK_ICON_BY_KIND: Record<string, { icon: any; color: string }> = {
   home: { icon: Folder, color: "from-slate-400 to-slate-500" },
@@ -160,8 +161,6 @@ export default function Home() {
                   <div className="grid grid-cols-4 gap-3">
                     {recents.slice(0, 4).map((f) => {
                       const ext = f.name.split(".").pop();
-                      const color = f.is_dir ? "text-blue-500" : fileIconColor(ext);
-                      const Icon = f.is_dir ? Folder : FileText;
                       return (
                         <Card
                           key={f.path}
@@ -169,7 +168,14 @@ export default function Home() {
                           className="p-0 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
                         >
                           <div className="aspect-[4/3] bg-gradient-to-br from-secondary/60 to-secondary/30 flex items-center justify-center">
-                            <Icon className={cn("w-10 h-10", color)} />
+                            <FileIcon
+                              name={f.name}
+                              path={f.path}
+                              isDir={f.is_dir}
+                              extension={ext}
+                              size="lg"
+                              thumbnail
+                            />
                           </div>
                           <div className="p-2">
                             <div className="text-xs font-medium truncate">{f.name}</div>
@@ -291,12 +297,14 @@ export default function Home() {
                   ) : (
                     <div className="space-y-2.5">
                       {recents.slice(0, 4).map((r) => {
-                        const Icon = r.is_dir ? Folder : FileText;
-                        const color = r.is_dir ? "text-blue-500" : fileIconColor(r.name.split(".").pop());
                         return (
                           <div key={r.path} className="flex items-start gap-2">
-                            <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                              <Icon className={cn("w-3.5 h-3.5", color)} />
+                            <div className="shrink-0">
+                              <FileIcon
+                                name={r.name}
+                                isDir={r.is_dir}
+                                size="sm"
+                              />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-xs truncate">{r.name}</div>

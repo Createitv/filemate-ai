@@ -6,11 +6,12 @@
 // Columns scroll horizontally; the active path is auto-scrolled into view.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Folder, FileText, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as api from "@/api";
 import type { DirEntryInfo, DirListing, PreviewMeta } from "@/api/types";
-import { fileIconColor, formatBytes, formatTime } from "@/lib/format";
+import { formatBytes, formatTime } from "@/lib/format";
+import { FileIcon } from "@/components/FileIcon";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useQuickLook } from "@/components/preview/useQuickLook";
 
@@ -158,8 +159,6 @@ function FolderColumn({
       )}
       {col.listing?.entries.map((entry) => {
         const active = selectedPath === entry.path;
-        const Icon = entry.is_dir ? Folder : FileText;
-        const color = entry.is_dir ? "text-blue-500" : fileIconColor(entry.extension);
         return (
           <button
             key={entry.path}
@@ -173,7 +172,7 @@ function FolderColumn({
                 : "hover:bg-accent/40"
             )}
           >
-            <Icon className={cn("w-4 h-4 shrink-0", active ? "text-primary-foreground" : color)} />
+            <FileIcon entry={entry} size="sm" thumbnail />
             <span className="truncate flex-1">{entry.name}</span>
             {entry.is_dir && (
               <ChevronRight

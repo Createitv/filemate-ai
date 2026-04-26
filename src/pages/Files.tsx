@@ -3,11 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Folder,
-  FileText,
-  FileImage,
-  FileVideo,
-  FileArchive,
-  FileAudio,
   ChevronRight,
   ChevronLeft,
   LayoutGrid,
@@ -36,13 +31,14 @@ import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { fileIconColor, formatBytes, formatTime } from "@/lib/format";
+import { formatBytes, formatTime } from "@/lib/format";
 import * as api from "@/api";
 import type { DirEntryInfo, DirListing } from "@/api/types";
 import { toast, toastError } from "@/components/ui/toast";
 import { useQuickLook } from "@/components/preview/useQuickLook";
 import { OpenWithDialog } from "@/components/OpenWithMenu";
 import { ColumnView } from "@/components/files/ColumnView";
+import { FileIcon } from "@/components/FileIcon";
 
 interface Clipboard {
   paths: string[];
@@ -472,15 +468,6 @@ function Breadcrumbs({ path, onJump }: { path: string; onJump: (p: string) => vo
   );
 }
 
-function entryIcon(e: DirEntryInfo) {
-  if (e.is_dir) return Folder;
-  const ext = (e.extension || "").toLowerCase();
-  if (["jpg", "jpeg", "png", "gif", "webp", "heic", "tiff", "svg"].includes(ext)) return FileImage;
-  if (["mp4", "mov", "mkv", "avi", "webm"].includes(ext)) return FileVideo;
-  if (["mp3", "flac", "wav", "aac", "m4a"].includes(ext)) return FileAudio;
-  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return FileArchive;
-  return FileText;
-}
 
 function FileList({
   entries,
@@ -507,10 +494,7 @@ function FileList({
         </tr>
       </thead>
       <tbody>
-        {entries.map((e) => {
-          const Icon = entryIcon(e);
-          const color = e.is_dir ? "text-blue-500" : fileIconColor(e.extension);
-          return (
+        {entries.map((e) => (
             <tr
               key={e.path}
               onClick={(ev) => onSelect(ev, e)}
@@ -523,7 +507,7 @@ function FileList({
             >
               <td className="px-6 py-2.5">
                 <div className="flex items-center gap-2.5">
-                  <Icon className={cn("w-4 h-4", color)} />
+                  <FileIcon entry={e} size="sm" thumbnail />
                   <span className="truncate">{e.name}</span>
                 </div>
               </td>
@@ -535,8 +519,7 @@ function FileList({
                 {e.is_dir ? "文件夹" : (e.extension || "").toUpperCase() || "文件"}
               </td>
             </tr>
-          );
-        })}
+          ))}
       </tbody>
     </table>
   );
@@ -557,25 +540,21 @@ function FileGrid({
 }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3 p-4">
-      {entries.map((e) => {
-        const Icon = entryIcon(e);
-        const color = e.is_dir ? "text-blue-500" : fileIconColor(e.extension);
-        return (
-          <div
-            key={e.path}
-            onClick={(ev) => onSelect(ev, e)}
-            onDoubleClick={() => onActivate(e)}
-            onContextMenu={(ev) => onContextMenu(ev, e)}
-            className={cn(
-              "flex flex-col items-center p-3 rounded-xl cursor-pointer hover:bg-accent/40",
-              selected.has(e.path) && "bg-accent/60"
-            )}
-          >
-            <Icon className={cn("w-10 h-10 mb-2", color)} />
-            <div className="text-xs text-center break-all line-clamp-2">{e.name}</div>
-          </div>
-        );
-      })}
+      {entries.map((e) => (
+        <div
+          key={e.path}
+          onClick={(ev) => onSelect(ev, e)}
+          onDoubleClick={() => onActivate(e)}
+          onContextMenu={(ev) => onContextMenu(ev, e)}
+          className={cn(
+            "flex flex-col items-center p-3 rounded-xl cursor-pointer hover:bg-accent/40",
+            selected.has(e.path) && "bg-accent/60"
+          )}
+        >
+          <FileIcon entry={e} size="lg" thumbnail className="mb-2" />
+          <div className="text-xs text-center break-all line-clamp-2">{e.name}</div>
+        </div>
+      ))}
     </div>
   );
 }
