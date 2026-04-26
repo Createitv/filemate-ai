@@ -142,7 +142,7 @@ fn compute_stats(root: &Path) -> AppResult<FolderStats> {
     recent.sort_by(|a, b| b.modified.cmp(&a.modified));
     recent.truncate(15);
 
-    let potential_dupes = size_buckets.values().filter(|c| **c >= 2).map(|c| **c).sum();
+    let potential_dupes = size_buckets.values().copied().filter(|c| *c >= 2).sum();
 
     Ok(FolderStats {
         root: root.to_string_lossy().to_string(),

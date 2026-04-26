@@ -15,7 +15,7 @@ use std::path::Path;
 
 pub use audio::AudioMeta;
 pub use font::FontMeta;
-pub use image_meta::{ExifEntry, Histogram, ImageMeta};
+pub use image_meta::ImageMeta;
 
 #[derive(Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]

@@ -69,17 +69,14 @@ fn read_name_table(file: &mut File, meta: &mut FontMeta) -> AppResult<()> {
     let num_tables = u16_be(&head[4..6]);
 
     let mut name_offset = 0u32;
-    let mut name_length = 0u32;
     let mut maxp_offset = 0u32;
     for _ in 0..num_tables {
         let mut rec = [0u8; 16];
         file.read_exact(&mut rec)?;
         let tag = &rec[0..4];
         let offset = u32_be(&rec[8..12]);
-        let length = u32_be(&rec[12..16]);
         if tag == b"name" {
             name_offset = offset;
-            name_length = length;
         } else if tag == b"maxp" {
             maxp_offset = offset;
         }

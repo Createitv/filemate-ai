@@ -3,8 +3,8 @@
 // a header like "320 kbps · 44.1 kHz · 03:42".
 
 use crate::error::AppResult;
-use lofty::file::TaggedFileExt;
-use lofty::prelude::{Accessor, AudioFile, ItemKey, TaggedFile};
+use lofty::file::{TaggedFile, TaggedFileExt};
+use lofty::prelude::{Accessor, AudioFile, ItemKey};
 use lofty::probe::Probe;
 use serde::Serialize;
 use std::path::Path;
@@ -48,12 +48,12 @@ pub fn extract(path: &Path) -> AppResult<AudioMeta> {
     let mut genre = None;
 
     if let Some(tag) = primary {
-        title = tag.title().map(|s| s.to_string());
-        artist = tag.artist().map(|s| s.to_string());
-        album = tag.album().map(|s| s.to_string());
+        title = tag.title().map(|s| s.into_owned());
+        artist = tag.artist().map(|s| s.into_owned());
+        album = tag.album().map(|s| s.into_owned());
         year = tag.year();
         track = tag.track();
-        genre = tag.genre().map(|s| s.to_string());
+        genre = tag.genre().map(|s| s.into_owned());
         album_artist = tag
             .get_string(&ItemKey::AlbumArtist)
             .map(|s| s.to_string());
