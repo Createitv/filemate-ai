@@ -25,6 +25,3 @@ secrets.toml
 
 # Claude Code internals
 .claude/
-# Optional package managers
-pnpm-lock.yaml
-yarn.lock
