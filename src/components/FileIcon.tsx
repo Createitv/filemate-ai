@@ -303,6 +303,17 @@ export function FileIcon({
   );
 }
 
+// Detect host OS once at module load. We can't use Tauri's async os plugin
+// here because the icon must render synchronously inside list rows, but the
+// userAgent reliably exposes the platform on every WebView we ship.
+const PLATFORM: "macos" | "windows" | "linux" = (() => {
+  if (typeof navigator === "undefined") return "macos";
+  const ua = navigator.userAgent;
+  if (/Win/i.test(ua)) return "windows";
+  if (/Mac|iPhone|iPad/i.test(ua)) return "macos";
+  return "linux";
+})();
+
 function FolderIcon({
   px,
   kind,
@@ -312,39 +323,126 @@ function FolderIcon({
   kind: Kind;
   className?: string;
 }) {
-  const [a, b] = PALETTE[kind] || PALETTE.folder;
-  const id = useMemo(() => `g-${Math.random().toString(36).slice(2, 8)}`, []);
+  // System dirs (Library/Applications/Users) get the blue tint regardless of
+  // platform — the body of the folder still follows the host OS shape.
+  const tinted = kind === "folder_blue";
+  if (PLATFORM === "windows") {
+    return <WindowsFolder px={px} tinted={tinted} className={className} />;
+  }
+  // macOS and Linux both render the macOS-style folder; Linux file managers
+  // vary so much that the macOS shape feels "neutral native" rather than out
+  // of place.
+  return <MacFolder px={px} tinted={tinted} className={className} />;
+}
+
+/**
+ * macOS Big Sur+ style folder: cool blue gradient with a darker back panel
+ * peeking above the tab. Suggests the 3D depth of the system icon while
+ * staying flat enough to scale down to 16px without artifacts.
+ */
+function MacFolder({
+  px,
+  tinted,
+  className,
+}: {
+  px: number;
+  tinted?: boolean;
+  className?: string;
+}) {
+  const id = useMemo(() => `mf-${Math.random().toString(36).slice(2, 8)}`, []);
+  // Default: macOS classic blue. Tinted variant: subtler indigo for system
+  // dirs so they read as "system" rather than user-created.
+  const back = tinted ? "#5E81F4" : "#5BA8E5";
+  const frontA = tinted ? "#7B97F8" : "#8DC9F6";
+  const frontB = tinted ? "#5773F0" : "#5BA8E5";
   return (
     <svg
       width={px}
       height={px}
       viewBox="0 0 64 64"
       className={cn("shrink-0", className)}
+      role="img"
+      aria-label="folder"
     >
       <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={a} />
-          <stop offset="100%" stopColor={b} />
+        <linearGradient id={`${id}-front`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={frontA} />
+          <stop offset="100%" stopColor={frontB} />
         </linearGradient>
       </defs>
-      {/* tab */}
+      {/* back panel with tab */}
       <path
-        d="M6 16 Q6 12 10 12 L24 12 Q26 12 27 13.5 L30 17 L54 17 Q58 17 58 21 L58 24 L6 24 Z"
-        fill={a}
-        opacity="0.85"
+        d="M6 18 Q6 14 10 14 L24 14 Q26 14 27.4 15.4 L31 19 L54 19 Q58 19 58 23 L58 51 Q58 55 54 55 L10 55 Q6 55 6 51 Z"
+        fill={back}
+      />
+      {/* front panel rounded with subtle inner gradient */}
+      <path
+        d="M6 26 L58 26 L58 51 Q58 55 54 55 L10 55 Q6 55 6 51 Z"
+        fill={`url(#${id}-front)`}
+      />
+      {/* top highlight on front panel */}
+      <path
+        d="M6 26 L58 26 L58 30 L6 30 Z"
+        fill="white"
+        opacity="0.12"
+      />
+      {/* subtle shadow line where tab meets body */}
+      <line
+        x1="6"
+        y1="26"
+        x2="58"
+        y2="26"
+        stroke="#000"
+        strokeOpacity="0.08"
+        strokeWidth="0.6"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Windows 11 / Fluent style folder: warm yellow with a flat tab and very
+ * slight gradient. Sharper corners than macOS.
+ */
+function WindowsFolder({
+  px,
+  tinted,
+  className,
+}: {
+  px: number;
+  tinted?: boolean;
+  className?: string;
+}) {
+  const id = useMemo(() => `wf-${Math.random().toString(36).slice(2, 8)}`, []);
+  const tabColor = tinted ? "#7AAEF9" : "#F2B348";
+  const bodyA = tinted ? "#A6C8FB" : "#FFE4A8";
+  const bodyB = tinted ? "#7AAEF9" : "#FBC75A";
+  return (
+    <svg
+      width={px}
+      height={px}
+      viewBox="0 0 64 64"
+      className={cn("shrink-0", className)}
+      role="img"
+      aria-label="folder"
+    >
+      <defs>
+        <linearGradient id={`${id}-body`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={bodyA} />
+          <stop offset="100%" stopColor={bodyB} />
+        </linearGradient>
+      </defs>
+      {/* tab strip across the top */}
+      <path
+        d="M6 16 Q6 13 9 13 L24 13 Q25.5 13 26.5 14.2 L29 17 L58 17 Q60 17 60 19 L60 22 L6 22 Z"
+        fill={tabColor}
       />
       {/* body */}
-      <rect x="6" y="22" width="52" height="32" rx="4" fill={`url(#${id})`} />
-      {/* highlight */}
-      <rect
-        x="6"
-        y="22"
-        width="52"
-        height="6"
-        rx="4"
-        fill="white"
-        opacity="0.18"
-      />
+      <rect x="6" y="20" width="54" height="32" rx="2" fill={`url(#${id}-body)`} />
+      {/* fluent-style top-edge highlight */}
+      <rect x="6" y="20" width="54" height="3" rx="2" fill="white" opacity="0.4" />
+      {/* subtle bottom shadow line */}
+      <rect x="6" y="51" width="54" height="1" fill="#000" opacity="0.10" />
     </svg>
   );
 }
