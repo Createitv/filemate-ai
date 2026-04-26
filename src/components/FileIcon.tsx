@@ -458,9 +458,33 @@ function BadgeIcon({
   label: string;
   className?: string;
 }) {
-  const [a, b] = PALETTE[kind] || PALETTE.unknown;
-  const id = useMemo(() => `b-${Math.random().toString(36).slice(2, 8)}`, []);
-  // Sheet of paper shape with folded corner.
+  if (PLATFORM === "windows") {
+    return <WindowsFileBadge px={px} kind={kind} label={label} className={className} />;
+  }
+  return <MacFileBadge px={px} kind={kind} label={label} className={className} />;
+}
+
+/**
+ * macOS Finder document style — soft white sheet with rounded corners and a
+ * folded triangle in the upper-right. The format name sits in a small
+ * colored chip near the bottom rather than tinting the whole tile, matching
+ * how macOS draws Pages / PDF / Numbers icons.
+ */
+function MacFileBadge({
+  px,
+  kind,
+  label,
+  className,
+}: {
+  px: number;
+  kind: Kind;
+  label: string;
+  className?: string;
+}) {
+  const [, accent] = PALETTE[kind] || PALETTE.unknown;
+  const id = useMemo(() => `m-${Math.random().toString(36).slice(2, 8)}`, []);
+  const chipW = Math.min(40, 14 + label.length * 6.5);
+  const chipX = 32 - chipW / 2;
   return (
     <svg
       width={px}
@@ -471,42 +495,99 @@ function BadgeIcon({
       aria-label={label || "file"}
     >
       <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={a} />
-          <stop offset="100%" stopColor={b} />
+        <linearGradient id={`${id}-paper`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#F4F4F5" />
         </linearGradient>
       </defs>
-      {/* paper */}
+      {/* paper with folded top-right corner */}
       <path
-        d="M14 6 L40 6 L54 20 L54 56 Q54 60 50 60 L14 60 Q10 60 10 56 L10 10 Q10 6 14 6 Z"
-        fill={`url(#${id})`}
+        d="M14 6 Q12 6 12 8 L12 56 Q12 58 14 58 L50 58 Q52 58 52 56 L52 22 L38 22 Q36 22 36 20 L36 6 Z"
+        fill={`url(#${id}-paper)`}
+        stroke="#D4D4D8"
+        strokeWidth="0.7"
       />
-      {/* folded corner */}
-      <path
-        d="M40 6 L54 20 L42 20 Q40 20 40 18 Z"
-        fill="white"
-        opacity="0.30"
-      />
-      {/* label band */}
+      {/* fold triangle */}
+      <path d="M36 6 L52 22 L36 22 Z" fill="#E4E4E7" />
+      <path d="M36 6 L52 22" stroke="#D4D4D8" strokeWidth="0.7" />
+      {/* format chip */}
       {label && (
         <g>
-          <rect
-            x="6"
-            y="36"
-            width={Math.min(48, 12 + label.length * 8)}
-            height="14"
-            rx="3"
-            fill="white"
-            opacity="0.95"
-          />
+          <rect x={chipX} y="42" width={chipW} height="11" rx="2.5" fill={accent} />
           <text
-            x={6 + Math.min(48, 12 + label.length * 8) / 2}
-            y="46"
+            x="32"
+            y="50"
             textAnchor="middle"
-            fontSize="9"
+            fontSize="7"
             fontWeight="700"
-            fill={b}
-            fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            fill="white"
+            fontFamily="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            letterSpacing="0.3"
+          >
+            {label}
+          </text>
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/**
+ * Windows Explorer document style — sharper white sheet with a tabbed
+ * top-right corner and a heavier colored stripe at the bottom carrying
+ * the format letters. Mirrors how Windows draws DOCX / PDF / TXT icons
+ * with their distinctive corner-and-base color block.
+ */
+function WindowsFileBadge({
+  px,
+  kind,
+  label,
+  className,
+}: {
+  px: number;
+  kind: Kind;
+  label: string;
+  className?: string;
+}) {
+  const [light, accent] = PALETTE[kind] || PALETTE.unknown;
+  const id = useMemo(() => `w-${Math.random().toString(36).slice(2, 8)}`, []);
+  return (
+    <svg
+      width={px}
+      height={px}
+      viewBox="0 0 64 64"
+      className={cn("shrink-0", className)}
+      role="img"
+      aria-label={label || "file"}
+    >
+      <defs>
+        <linearGradient id={`${id}-paper`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#F1F5F9" />
+        </linearGradient>
+      </defs>
+      {/* paper with sharper corner */}
+      <path
+        d="M12 6 L40 6 L54 20 L54 58 L12 58 Z"
+        fill={`url(#${id}-paper)`}
+        stroke="#CBD5E1"
+        strokeWidth="0.7"
+      />
+      {/* corner fold */}
+      <path d="M40 6 L54 20 L40 20 Z" fill={light} opacity="0.4" />
+      <path d="M40 6 L40 20 L54 20" stroke="#CBD5E1" strokeWidth="0.7" fill="none" />
+      {/* color stripe at bottom carrying the format letters (Windows style) */}
+      {label && (
+        <g>
+          <rect x="12" y="40" width="42" height="14" fill={accent} />
+          <text
+            x="33"
+            y="50"
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="800"
+            fill="white"
+            fontFamily="'Segoe UI', system-ui, sans-serif"
             letterSpacing="0.5"
           >
             {label}
