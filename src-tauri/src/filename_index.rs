@@ -14,11 +14,14 @@
 
 use crate::error::AppResult;
 use parking_lot::RwLock;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use walkdir::WalkDir;
+
+const PERSIST_FILENAME: &str = "filename_index.bin";
+const PERSIST_VERSION: u32 = 1;
 
 const NOISE_DIRS: &[&str] = &[
     ".git",
@@ -43,13 +46,21 @@ const NOISE_DIRS: &[&str] = &[
     "System Volume Information",
 ];
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedEntry {
     pub name: String,
     pub path: String,
     pub is_dir: bool,
     pub size: u64,
     pub modified: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Snapshot {
+    version: u32,
+    root: String,
+    built_at: i64,
+    entries: Vec<IndexedEntry>,
 }
 
 struct Inner {
@@ -164,6 +175,67 @@ impl FilenameIndex {
         self.inner.read().entries.len()
     }
 
+    /// Persist the current index next to other app data. Cheap on miss
+    /// (creates the parent dir) and best-effort on failure.
+    pub fn save_to(&self, dir: &Path) -> AppResult<()> {
+        std::fs::create_dir_all(dir)?;
+        let path = dir.join(PERSIST_FILENAME);
+        let entries = self.inner.read().entries.clone();
+        let root = self
+            .root
+            .read()
+            .clone()
+            .unwrap_or_else(|| String::from(""));
+        let snap = Snapshot {
+            version: PERSIST_VERSION,
+            root,
+            built_at: self.built_at.load(Ordering::Acquire),
+            entries,
+        };
+        let bytes = bincode::serialize(&snap)
+            .map_err(|e| crate::error::AppError::Other(e.to_string()))?;
+        // Write to a sibling temp file, then atomic-rename to avoid
+        // half-written state if the process exits mid-write.
+        let tmp = path.with_extension("bin.tmp");
+        std::fs::write(&tmp, &bytes)?;
+        std::fs::rename(&tmp, &path)?;
+        Ok(())
+    }
+
+    /// Load a previously persisted index. Returns Ok(false) when the file
+    /// doesn't exist or its version is incompatible — caller falls back to
+    /// a fresh build.
+    pub fn load_from(&self, dir: &Path) -> AppResult<bool> {
+        let path = dir.join(PERSIST_FILENAME);
+        if !path.is_file() {
+            return Ok(false);
+        }
+        let bytes = std::fs::read(&path)?;
+        let snap: Snapshot = match bincode::deserialize(&bytes) {
+            Ok(s) => s,
+            Err(_) => return Ok(false),
+        };
+        if snap.version != PERSIST_VERSION {
+            return Ok(false);
+        }
+        let names_lower: Vec<String> =
+            snap.entries.iter().map(|e| e.name.to_lowercase()).collect();
+        {
+            let mut w = self.inner.write();
+            w.entries = snap.entries;
+            w.names_lower = names_lower;
+        }
+        *self.root.write() = if snap.root.is_empty() {
+            None
+        } else {
+            Some(snap.root)
+        };
+        self.built_at.store(snap.built_at, Ordering::Release);
+        self.progress
+            .store(self.inner.read().entries.len(), Ordering::Release);
+        Ok(true)
+    }
+
     /// Apply a watcher event. Cheap-on-miss: silently ignores paths outside
     /// the indexed root. Renames are handled as remove(from) + add(to).
     pub fn apply_event(&self, ev: &crate::watcher::FsEvent) {
@@ -274,13 +346,85 @@ pub struct IndexStatus {
 
 #[tauri::command]
 pub async fn build_filename_index(
+    app: tauri::AppHandle,
     state: tauri::State<'_, crate::state::AppState>,
     root: String,
 ) -> AppResult<usize> {
     let idx = Arc::clone(&state.filename_index);
-    tokio::task::spawn_blocking(move || idx.build(Path::new(&root)))
-        .await
-        .map_err(|e| crate::error::AppError::Other(e.to_string()))?
+    let data_dir = app_data_dir(&app);
+    tokio::task::spawn_blocking(move || -> AppResult<usize> {
+        let n = idx.build(Path::new(&root))?;
+        if let Some(d) = data_dir {
+            let _ = idx.save_to(&d);
+        }
+        Ok(n)
+    })
+    .await
+    .map_err(|e| crate::error::AppError::Other(e.to_string()))?
+}
+
+fn app_data_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
+    use tauri::Manager;
+    app.path().app_data_dir().ok()
+}
+
+/// Called once at app startup. Tries to restore the persisted index; if
+/// nothing on disk, kicks off a background build over $HOME so the user
+/// can search shortly after launch without manual indexing.
+pub fn spawn_startup_scan(app: tauri::AppHandle) {
+    use tauri::Manager;
+    let idx = match app.try_state::<crate::state::AppState>() {
+        Some(s) => Arc::clone(&s.filename_index),
+        None => return,
+    };
+    idx.indexing.store(true, Ordering::Release);
+    tokio::spawn(async move {
+        let data_dir = app_data_dir(&app);
+
+        // 1. Try to load from disk — instant if present.
+        if let Some(ref d) = data_dir {
+            let idx2 = Arc::clone(&idx);
+            let d2 = d.clone();
+            let loaded = tokio::task::spawn_blocking(move || idx2.load_from(&d2))
+                .await
+                .unwrap_or(Ok(false))
+                .unwrap_or(false);
+            if loaded {
+                tracing::info!(
+                    "filename index restored: {} entries",
+                    idx.count()
+                );
+                idx.indexing.store(false, Ordering::Release);
+                return;
+            }
+        }
+
+        // 2. Cold start — walk $HOME in the background.
+        let home = match dirs::home_dir() {
+            Some(p) => p,
+            None => {
+                idx.indexing.store(false, Ordering::Release);
+                return;
+            }
+        };
+        tracing::info!("filename index: cold-building over {}", home.display());
+        let idx2 = Arc::clone(&idx);
+        let res = tokio::task::spawn_blocking(move || idx2.build(&home))
+            .await
+            .map_err(|e| crate::error::AppError::Other(e.to_string()));
+        match res {
+            Ok(Ok(n)) => {
+                tracing::info!("filename index built: {n} entries");
+                if let Some(d) = data_dir {
+                    let idx2 = Arc::clone(&idx);
+                    let _ = tokio::task::spawn_blocking(move || idx2.save_to(&d))
+                        .await;
+                }
+            }
+            Ok(Err(e)) => tracing::warn!("filename index build failed: {e}"),
+            Err(e) => tracing::warn!("filename index build join failed: {e}"),
+        }
+    });
 }
 
 #[tauri::command]

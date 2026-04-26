@@ -24,7 +24,6 @@ import {
   Brain,
   History,
   TerminalSquare,
-  Bot,
   Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,7 +43,6 @@ const DIR_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 const TOOLS = [
   { to: "/versions", icon: History, label: "版本历史" },
   { to: "/terminal", icon: TerminalSquare, label: "终端" },
-  { to: "/ai-providers", icon: Bot, label: "AI 模型" },
 ];
 
 export function Sidebar() {

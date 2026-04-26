@@ -143,7 +143,7 @@ const blankDraft = (preset?: Preset): DraftProvider => ({
   top_p: 1.0,
 });
 
-export default function AIProviders() {
+export default function AIProviders({ embedded = false }: { embedded?: boolean } = {}) {
   const [providers, setProviders] = useState<AIProvider[]>([]);
   const [draft, setDraft] = useState<DraftProvider | null>(null);
   const [showKey, setShowKey] = useState(false);
@@ -223,10 +223,12 @@ export default function AIProviders() {
 
   const activeId = useMemo(() => providers.find((p) => p.is_active)?.id, [providers]);
 
-  return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <TopBar title="AI 模型管理" />
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-5xl">
+  const body = (
+    <>
+      <div className={cn(
+        "space-y-6 max-w-5xl",
+        embedded ? "" : "flex-1 overflow-y-auto p-6"
+      )}>
         <Card className="p-5">
           <div className="font-medium mb-2 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" /> 快速添加
@@ -429,6 +431,21 @@ export default function AIProviders() {
           </Card>
         </div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {body}
+      </>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col min-w-0">
+      <TopBar title="AI 模型管理" />
+      {body}
     </div>
   );
 }

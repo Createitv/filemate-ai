@@ -65,6 +65,9 @@ pub fn run() {
             let index = Index::open(&data_dir.join("index"))?;
             let state = AppState::new(db, index);
             app.manage(state);
+            // Restore persisted filename index, or scan $HOME in the
+            // background so search is responsive shortly after launch.
+            filename_index::spawn_startup_scan(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -1,23 +1,24 @@
-// Everything-style instant filename search. The user types, results stream
-// in under ~150ms debounce. AI / natural-language search lives in the AI
-// panel; this page is purely "type a name, find a file".
+// Everything-style instant filename search backed by an in-memory index.
+// On first visit we build an index over $HOME (skipping noise dirs); after
+// that, each keystroke filters the index in a few ms. The notify watcher
+// keeps the index live, so a full rebuild is only needed when scope changes.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search as SearchIcon,
   Loader2,
   FolderOpen,
   X,
   ArrowRight,
+  RefreshCw,
 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import * as api from "@/api";
-import type { DirEntryInfo } from "@/api/types";
+import type { FilenameIndexStatus, IndexedEntry } from "@/api/types";
 import { formatBytes, formatTime } from "@/lib/format";
 import { toastError } from "@/components/ui/toast";
 import { FileIcon } from "@/components/FileIcon";
@@ -29,60 +30,107 @@ export default function Search() {
   const initialQ = searchParams.get("q") || "";
 
   const [q, setQ] = useState(initialQ);
-  const [scope, setScope] = useState<string>("");
-  const [hits, setHits] = useState<DirEntryInfo[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [hits, setHits] = useState<IndexedEntry[]>([]);
   const [elapsed, setElapsed] = useState<number | null>(null);
   const [active, setActive] = useState<string | null>(null);
+  const [status, setStatus] = useState<FilenameIndexStatus | null>(null);
 
-  // Pick up home dir on mount as default scope.
+  // Boot: read status, kick off a build over $HOME if the index is empty.
   useEffect(() => {
-    api.homeDir().then(setScope).catch(() => {});
+    let cancelled = false;
+    (async () => {
+      try {
+        const s = await api.filenameIndexStatus();
+        if (cancelled) return;
+        setStatus(s);
+        if (!s.indexing && s.count === 0) {
+          const home = await api.homeDir();
+          if (!cancelled) ensureIndex(home);
+        }
+      } catch (e) {
+        toastError(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounced search — also cancellable via reqId so stale results don't win.
+  // Poll status while indexing so the UI shows progress.
+  useEffect(() => {
+    if (!status?.indexing) return;
+    const t = setInterval(async () => {
+      try {
+        const s = await api.filenameIndexStatus();
+        setStatus(s);
+        if (!s.indexing) clearInterval(t);
+      } catch {}
+    }, 400);
+    return () => clearInterval(t);
+  }, [status?.indexing]);
+
+  // Synchronous-ish query: index is in-memory, so no debounce needed.
+  // We still skip empty queries and cap result count.
   const reqIdRef = useRef(0);
   useEffect(() => {
-    if (!scope) return;
     const query = q.trim();
     if (!query) {
       setHits([]);
       setElapsed(null);
-      setBusy(false);
       return;
     }
-    const handle = setTimeout(async () => {
-      const id = ++reqIdRef.current;
-      setBusy(true);
-      const t0 = performance.now();
-      try {
-        const results = await api.searchFilenames(scope, query, 500);
-        if (id !== reqIdRef.current) return; // a newer query already fired
-        setHits(results);
+    if (status?.count === 0 || status?.indexing) return;
+
+    const id = ++reqIdRef.current;
+    const t0 = performance.now();
+    api
+      .queryFilenameIndex(query, 500)
+      .then((r) => {
+        if (id !== reqIdRef.current) return;
+        setHits(r);
         setElapsed(performance.now() - t0);
-      } catch (e) {
+      })
+      .catch((e) => {
         if (id === reqIdRef.current) toastError(e);
-      } finally {
-        if (id === reqIdRef.current) setBusy(false);
-      }
-    }, 150);
-    return () => clearTimeout(handle);
-  }, [q, scope]);
+      });
+  }, [q, status?.count, status?.indexing]);
+
+  const ensureIndex = async (root: string) => {
+    setStatus((s) => ({
+      root,
+      count: 0,
+      indexing: true,
+      progress: 0,
+      built_at: s?.built_at ?? 0,
+    }));
+    try {
+      await api.buildFilenameIndex(root);
+      const s = await api.filenameIndexStatus();
+      setStatus(s);
+    } catch (e) {
+      toastError(e);
+      setStatus((s) => (s ? { ...s, indexing: false } : s));
+    }
+  };
 
   const pickScope = async () => {
     const dir = await openDialog({ directory: true, multiple: false });
-    if (dir) setScope(String(dir));
+    if (dir) ensureIndex(String(dir));
   };
 
-  const revealInFiles = (entry: DirEntryInfo) => {
-    // Navigate Files page to the parent folder so the file is visible.
+  const rebuild = () => {
+    if (status?.root) ensureIndex(status.root);
+  };
+
+  const revealInFiles = (entry: IndexedEntry) => {
     const parent = entry.is_dir
       ? entry.path
       : entry.path.replace(/[\\/][^\\/]*$/, "") || entry.path;
     navigate(`/files?path=${encodeURIComponent(parent)}`);
   };
 
-  const openEntry = (entry: DirEntryInfo) => {
+  const openEntry = (entry: IndexedEntry) => {
     if (entry.is_dir) {
       navigate(`/files?path=${encodeURIComponent(entry.path)}`);
     } else {
@@ -91,10 +139,14 @@ export default function Search() {
   };
 
   const scopeLabel = useMemo(() => {
-    if (!scope) return "—";
-    const parts = scope.split(/[\\/]/).filter(Boolean);
-    return parts.length ? parts[parts.length - 1] : scope;
-  }, [scope]);
+    const r = status?.root;
+    if (!r) return "—";
+    const parts = r.split(/[\\/]/).filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : r;
+  }, [status?.root]);
+
+  const indexing = status?.indexing ?? false;
+  const indexed = status?.count ?? 0;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -108,9 +160,14 @@ export default function Search() {
               <Input
                 autoFocus
                 className="pl-9 pr-9 h-11"
-                placeholder="按文件名搜索…（无需回车，输入即查）"
+                placeholder={
+                  indexing
+                    ? `正在建立索引… 已扫描 ${status?.progress.toLocaleString()} 项`
+                    : "按文件名搜索…（即时查询）"
+                }
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
+                disabled={indexing && indexed === 0}
               />
               {q && (
                 <button
@@ -122,40 +179,51 @@ export default function Search() {
                 </button>
               )}
             </div>
-            <Button variant="outline" onClick={pickScope}>
+            <Button variant="outline" onClick={pickScope} disabled={indexing}>
               <FolderOpen className="w-4 h-4" />
               范围: {scopeLabel}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={rebuild}
+              disabled={indexing || !status?.root}
+              title="重建索引"
+            >
+              {indexing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
             </Button>
           </div>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground h-4">
-            {busy && (
+            {indexing && (
               <span className="flex items-center gap-1.5">
-                <Loader2 className="w-3 h-3 animate-spin" /> 搜索中…
+                <Loader2 className="w-3 h-3 animate-spin" />
+                建立索引中… {status?.progress.toLocaleString()} 项
               </span>
             )}
-            {!busy && q && (
+            {!indexing && indexed > 0 && q && (
               <span>
-                {hits.length} 条结果
-                {elapsed !== null && ` · ${Math.round(elapsed)} ms`}
+                {hits.length} / {indexed.toLocaleString()} 条
+                {elapsed !== null && ` · ${Math.max(1, Math.round(elapsed))} ms`}
               </span>
             )}
-            {!q && (
-              <span>提示：自然语言搜索请在右侧 AI 面板中使用。</span>
+            {!indexing && indexed > 0 && !q && (
+              <span>已索引 {indexed.toLocaleString()} 项 · 输入即查</span>
+            )}
+            {!indexing && indexed === 0 && (
+              <span>索引为空，点击右上角刷新按钮或选择范围后重新建立。</span>
             )}
           </div>
         </div>
 
         {/* Results */}
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 pb-6">
-          {q && hits.length === 0 && !busy && (
+          {q && hits.length === 0 && !indexing && indexed > 0 && (
             <div className="text-center text-sm text-muted-foreground py-16">
               未找到匹配项
-            </div>
-          )}
-          {!q && hits.length === 0 && (
-            <div className="text-center text-sm text-muted-foreground py-16">
-              输入文件名即可开始搜索。
             </div>
           )}
 
@@ -170,6 +238,13 @@ export default function Search() {
               </div>
               {hits.map((h) => {
                 const isActive = active === h.path;
+                const entryShape = {
+                  ...h,
+                  is_symlink: false,
+                  extension: h.name.includes(".")
+                    ? h.name.split(".").pop()
+                    : undefined,
+                };
                 return (
                   <div
                     key={h.path}
@@ -181,7 +256,7 @@ export default function Search() {
                     )}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <FileIcon entry={h} size="sm" />
+                      <FileIcon entry={entryShape as any} size="sm" />
                       <span className="truncate">{h.name}</span>
                     </div>
                     <div className="text-xs text-muted-foreground truncate">

@@ -1,27 +1,21 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ACCENT_PRESETS, useThemeStore, type ThemeMode } from "@/stores/theme";
 import { SUPPORTED_LANGS } from "@/i18n";
-import { Sun, Moon, Monitor, Check, ChevronRight } from "lucide-react";
+import { Sun, Moon, Monitor, Check } from "lucide-react";
 import * as api from "@/api";
 import { cn } from "@/lib/utils";
+import AIProviders from "@/pages/AIProviders";
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const { mode, accent, setMode, setAccent } = useThemeStore();
   const [version, setVersion] = useState("");
-  const [activeProvider, setActiveProvider] = useState<string>("");
 
   useEffect(() => {
     api.appVersion().then(setVersion).catch(() => {});
-    api
-      .aiHealth()
-      .then((h) => h?.ok && setActiveProvider(`${h.active_provider} · ${h.model}`))
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -41,7 +35,7 @@ export default function Settings() {
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <TopBar title={t("settings.title")} />
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-6 max-w-3xl">
+      <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-6 max-w-5xl">
         <Card>
           <CardHeader>
             <CardTitle>{t("settings.appearance")}</CardTitle>
@@ -115,20 +109,10 @@ export default function Settings() {
             <CardTitle>{t("settings.ai")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <button
-              onClick={() => navigate("/ai-providers")}
-              className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:bg-accent/40"
-            >
-              <div className="text-left">
-                <div className="font-medium text-sm">AI 模型管理</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {activeProvider
-                    ? `当前激活：${activeProvider}`
-                    : "添加 DeepSeek / OpenAI / Claude / Ollama 等模型"}
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
+            <div className="text-xs text-muted-foreground mb-4">
+              添加 DeepSeek / OpenAI / Claude / Moonshot / Qwen / Ollama 等模型 — 在下方挑一个模板，填 API Key 即可。
+            </div>
+            <AIProviders embedded />
           </CardContent>
         </Card>
 
