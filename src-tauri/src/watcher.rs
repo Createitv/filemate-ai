@@ -7,7 +7,7 @@
 
 use crate::error::AppResult;
 use crate::state::AppState;
-use notify::RecursiveMode;
+use notify::{RecursiveMode, Watcher};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use serde::Serialize;
 use std::path::{Path, PathBuf};

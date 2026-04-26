@@ -52,7 +52,7 @@ impl S3Provider {
         if parsed.path_style {
             bucket.set_path_style();
         }
-        Ok(Self { bucket: *bucket })
+        Ok(Self { bucket })
     }
 }
 

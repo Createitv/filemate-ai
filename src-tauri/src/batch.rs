@@ -1,7 +1,7 @@
 // Batch operations: rename with templates, move/copy with conflict policy,
 // SHA-256 hashing for duplicate detection.
 
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 use chrono::{Local, TimeZone};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -21,7 +21,7 @@ pub struct RenameRule {
     pub replace: Option<(String, String)>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct RenamePlan {
     pub from: String,
     pub to: String,
