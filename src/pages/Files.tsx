@@ -12,7 +12,9 @@ import {
   ChevronLeft,
   LayoutGrid,
   List,
+  Columns3,
   Plus,
+  Search as SearchIcon,
   Upload,
   Eye,
   Copy,
@@ -42,6 +44,7 @@ import type { DirEntryInfo, DirListing } from "@/api/types";
 import { toast, toastError } from "@/components/ui/toast";
 import { useQuickLook } from "@/components/preview/useQuickLook";
 import { OpenWithDialog } from "@/components/OpenWithMenu";
+import { ColumnView } from "@/components/files/ColumnView";
 
 interface Clipboard {
   paths: string[];
@@ -54,7 +57,7 @@ export default function Files() {
   const [listing, setListing] = useState<DirListing | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
-  const [view, setView] = useState<"list" | "grid">("list");
+  const [view, setView] = useState<"list" | "grid" | "column">("list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [ctx, setCtx] = useState<{ x: number; y: number; target: DirEntryInfo } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -290,25 +293,46 @@ export default function Files() {
           </Button>
           <Breadcrumbs path={path} onJump={(p) => navigate(p)} />
 
-          <Input
-            className="w-56"
-            placeholder={t("files.path_placeholder")}
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          />
+          <div className="relative w-56">
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              className="pl-8 h-8"
+              placeholder="搜索当前目录…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          </div>
 
-          <div className="flex items-center gap-1 bg-secondary/60 rounded-lg p-1">
+          <div className="flex items-center gap-0.5 bg-secondary/60 rounded-lg p-0.5">
             <button
               onClick={() => setView("list")}
-              className={cn("p-1.5 rounded-md", view === "list" && "bg-background shadow-sm")}
+              title="列表视图"
+              className={cn(
+                "p-1.5 rounded-md transition",
+                view === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
             >
               <List className="w-4 h-4" />
             </button>
             <button
               onClick={() => setView("grid")}
-              className={cn("p-1.5 rounded-md", view === "grid" && "bg-background shadow-sm")}
+              title="图标视图"
+              className={cn(
+                "p-1.5 rounded-md transition",
+                view === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
             >
               <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setView("column")}
+              title="多列视图（Finder 风格）"
+              className={cn(
+                "p-1.5 rounded-md transition",
+                view === "column" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Columns3 className="w-4 h-4" />
             </button>
           </div>
           <Button variant="outline" size="sm" onClick={doNewFolder}>
@@ -316,8 +340,8 @@ export default function Files() {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
-          {view === "list" ? (
+        <div className={cn("flex-1 overflow-hidden", view !== "column" && "overflow-y-auto scrollbar-thin")}>
+          {view === "list" && (
             <FileList
               entries={filtered}
               selected={selected}
@@ -325,7 +349,8 @@ export default function Files() {
               onActivate={onActivate}
               onContextMenu={onContextMenu}
             />
-          ) : (
+          )}
+          {view === "grid" && (
             <FileGrid
               entries={filtered}
               selected={selected}
@@ -334,12 +359,19 @@ export default function Files() {
               onContextMenu={onContextMenu}
             />
           )}
-          {loading && (
+          {view === "column" && (
+            <ColumnView
+              path={path}
+              onSelectFolder={(p) => navigate(p)}
+              onContextMenu={onContextMenu}
+            />
+          )}
+          {view !== "column" && loading && (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin mr-2" /> 加载中…
             </div>
           )}
-          {!loading && filtered.length === 0 && (
+          {view !== "column" && !loading && filtered.length === 0 && (
             <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
               此目录为空
             </div>
