@@ -44,6 +44,16 @@ export const metadata = (path: string) =>
   invoke<DirEntryInfo>("metadata", { path });
 export const openPath = (path: string) => invoke<void>("open_path", { path });
 
+// ---------- open with ----------
+export const listInstalledApps = () =>
+  invoke<import("./types").AppInfo[]>("list_installed_apps");
+export const openWith = (path: string, appId: string) =>
+  invoke<void>("open_with", { path, appId });
+export const openWithDialog = (path: string) =>
+  invoke<void>("open_with_dialog", { path });
+export const revealInFolder = (path: string) =>
+  invoke<void>("reveal_in_folder", { path });
+
 // ---------- disk ----------
 export const listDisks = () => invoke<DiskInfo[]>("list_disks");
 

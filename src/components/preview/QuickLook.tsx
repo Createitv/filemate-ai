@@ -22,6 +22,7 @@ import type { PreviewMeta } from "@/api/types";
 import { fileIconColor } from "@/lib/format";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
+import { OpenWithMenu } from "@/components/OpenWithMenu";
 
 export function QuickLook() {
   const { visible, items, index, close, next, prev, setIndex } = useQuickLook();
@@ -105,6 +106,7 @@ export function QuickLook() {
             <HeaderBtn onClick={() => current && api.openPath(current.path)} title="用默认程序打开">
               <FolderOpen className="w-3.5 h-3.5" />
             </HeaderBtn>
+            {current && <OpenWithMenu path={current.path} variant="button" />}
             <HeaderBtn onClick={() => setMaximized((m) => !m)} title="最大化">
               {maximized ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
             </HeaderBtn>

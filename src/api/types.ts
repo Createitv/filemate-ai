@@ -249,6 +249,13 @@ export interface AnalyzeResult {
   session_id: string;
 }
 
+export interface AppInfo {
+  id: string;
+  name: string;
+  path: string;
+  kind: "macos_app" | "linux_desktop" | "windows_exec";
+}
+
 export type FsEvent =
   | { kind: "created"; path: string }
   | { kind: "modified"; path: string }

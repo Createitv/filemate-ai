@@ -23,6 +23,8 @@ import {
   History,
   Sparkles,
   Settings as SettingsIcon,
+  ExternalLink,
+  FolderOpen as FolderOpenIcon,
   Loader2,
   Home as HomeIcon,
   ArrowUp,
@@ -38,6 +40,7 @@ import * as api from "@/api";
 import type { DirEntryInfo, DirListing } from "@/api/types";
 import { toast, toastError } from "@/components/ui/toast";
 import { useQuickLook } from "@/components/preview/useQuickLook";
+import { OpenWithDialog } from "@/components/OpenWithMenu";
 
 interface Clipboard {
   paths: string[];
@@ -56,6 +59,7 @@ export default function Files() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
   const [clipboard, setClipboard] = useState<Clipboard | null>(null);
+  const [openWithFor, setOpenWithFor] = useState<string | null>(null);
 
   const navigate = useCallback(async (target: string, recordHistory = true) => {
     setLoading(true);
@@ -334,6 +338,9 @@ export default function Files() {
         </div>
       </div>
 
+      {openWithFor && (
+        <OpenWithDialog path={openWithFor} onClose={() => setOpenWithFor(null)} />
+      )}
       {ctx && (
         <ContextMenu
           x={ctx.x}
@@ -352,6 +359,12 @@ export default function Files() {
                 useQuickLook.getState().open(items, Math.max(0, idx));
                 break;
               }
+              case "open_with":
+                setOpenWithFor(ctx.target.path);
+                break;
+              case "reveal":
+                api.revealInFolder(ctx.target.path).catch(toastError);
+                break;
               case "copy":
                 doCopy("copy");
                 break;
@@ -544,6 +557,8 @@ function ContextMenu({
   const items = [
     { id: "open", icon: Folder, label: t("files.ctx.open") },
     { id: "preview", icon: Eye, label: t("files.ctx.preview") },
+    { id: "open_with", icon: ExternalLink, label: "用其他应用打开…" },
+    { id: "reveal", icon: FolderOpenIcon, label: "在 Finder / 资源管理器中显示" },
     { divider: true },
     { id: "copy", icon: Copy, label: t("files.ctx.copy") },
     { id: "cut", icon: Scissors, label: t("files.ctx.cut") },

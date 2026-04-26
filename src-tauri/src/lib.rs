@@ -16,6 +16,7 @@ mod encryption;
 mod error;
 mod fs;
 mod oauth;
+mod open_with;
 mod preview;
 mod recents;
 mod search;
@@ -77,6 +78,10 @@ pub fn run() {
             fs::move_entry,
             fs::metadata,
             fs::open_path,
+            open_with::list_installed_apps,
+            open_with::open_with,
+            open_with::open_with_dialog,
+            open_with::reveal_in_folder,
             // disk
             disk::list_disks,
             // settings
