@@ -20,6 +20,12 @@ pub struct DirEntryInfo {
     pub created: Option<DateTime<Utc>>,
     pub mime: Option<String>,
     pub extension: Option<String>,
+    /// For directories only: whether the folder has zero entries (excluding
+    /// '.'/'..'). `None` when undetermined (file, permission denied, or
+    /// symlink that wasn't resolved). The frontend uses this to ghost
+    /// empty folders so users don't have to drill in to discover that.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_empty: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,6 +47,21 @@ pub fn entry_from_path(p: &Path) -> Option<DirEntryInfo> {
         .unwrap_or_else(|| p.to_string_lossy().to_string());
     let extension = p.extension().map(|e| e.to_string_lossy().to_string());
     let mime = mime_guess::from_path(p).first().map(|m| m.to_string());
+
+    // Quick "is this folder empty?" check. read_dir().next() is O(1) on
+    // every modern filesystem, so doing it for each subdir during a parent
+    // listing is cheap (few hundred μs even for parents with hundreds of
+    // children). Skip on permission errors / symlinks so we don't loop
+    // forever following links.
+    let is_empty = if meta.is_dir() && !meta.file_type().is_symlink() {
+        match fs::read_dir(p) {
+            Ok(mut iter) => Some(iter.next().is_none()),
+            Err(_) => None,
+        }
+    } else {
+        None
+    };
+
     Some(DirEntryInfo {
         name,
         path: p.to_string_lossy().to_string(),
@@ -51,6 +72,7 @@ pub fn entry_from_path(p: &Path) -> Option<DirEntryInfo> {
         created: system_time_to_dt(meta.created().ok()),
         mime,
         extension,
+        is_empty,
     })
 }
 

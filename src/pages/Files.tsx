@@ -515,6 +515,11 @@ function FileList({
                 <div className="flex items-center gap-2.5">
                   <FileIcon entry={e} size="sm" thumbnail />
                   <span className="truncate">{e.name}</span>
+                  {e.is_dir && e.is_empty && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground shrink-0">
+                      空
+                    </span>
+                  )}
                 </div>
               </td>
               <td className="px-4 py-2.5 text-muted-foreground">{formatTime(e.modified)}</td>
@@ -522,7 +527,7 @@ function FileList({
                 {e.is_dir ? "—" : formatBytes(e.size)}
               </td>
               <td className="px-4 py-2.5 text-muted-foreground">
-                {e.is_dir ? "文件夹" : (e.extension || "").toUpperCase() || "文件"}
+                {e.is_dir ? (e.is_empty ? "空文件夹" : "文件夹") : (e.extension || "").toUpperCase() || "文件"}
               </td>
             </tr>
           ))}
@@ -561,7 +566,12 @@ function FileGrid({
           )}
         >
           <FileIcon entry={e} size="lg" thumbnail className="mb-2" />
-          <div className="text-xs text-center break-all line-clamp-2">{e.name}</div>
+          <div className="text-xs text-center break-all line-clamp-2">
+            {e.name}
+            {e.is_dir && e.is_empty && (
+              <span className="ml-1 text-[10px] text-muted-foreground">(空)</span>
+            )}
+          </div>
         </div>
       ))}
     </div>

@@ -11,6 +11,8 @@ export interface DirEntryInfo {
   created?: string;
   mime?: string;
   extension?: string;
+  /** Directories only: true if read_dir(path).next() is None. */
+  is_empty?: boolean;
 }
 
 export interface DirListing {

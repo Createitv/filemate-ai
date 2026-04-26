@@ -16,13 +16,22 @@ export type FileIconSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 interface Props {
   /** Most callers pass the full DirEntryInfo. */
-  entry?: { name: string; path?: string; is_dir?: boolean; extension?: string; mime?: string };
+  entry?: {
+    name: string;
+    path?: string;
+    is_dir?: boolean;
+    extension?: string;
+    mime?: string;
+    is_empty?: boolean;
+  };
   /** Or just supply the bits manually. */
   name?: string;
   path?: string;
   isDir?: boolean;
   extension?: string;
   mime?: string;
+  /** Folders only: ghost the icon when the folder has zero entries. */
+  isEmpty?: boolean;
   size?: FileIconSize;
   /** When true, render a real thumbnail for images instead of the badge. */
   thumbnail?: boolean;
@@ -243,6 +252,7 @@ export function FileIcon({
   isDir,
   extension,
   mime,
+  isEmpty,
   size = "md",
   thumbnail,
   className,
@@ -253,6 +263,7 @@ export function FileIcon({
   const finalIsDir = entry?.is_dir ?? isDir ?? false;
   const finalExt = (entry?.extension ?? extension ?? "").toLowerCase();
   const finalMime = entry?.mime ?? mime;
+  const finalIsEmpty = entry?.is_empty ?? isEmpty ?? false;
 
   const resolved: Resolved = useMemo(() => {
     if (finalIsDir) {
@@ -266,9 +277,16 @@ export function FileIcon({
     return candidate || resolveFromName(finalName, finalMime);
   }, [finalName, finalIsDir, finalExt, finalMime]);
 
-  // Folder → SVG shape
+  // Folder → SVG shape (ghosted when empty so users can see at-a-glance)
   if (finalIsDir) {
-    return <FolderIcon px={px} kind={resolved.kind} className={className} />;
+    return (
+      <FolderIcon
+        px={px}
+        kind={resolved.kind}
+        empty={finalIsEmpty}
+        className={className}
+      />
+    );
   }
 
   // Image with thumbnail
@@ -317,22 +335,43 @@ const PLATFORM: "macos" | "windows" | "linux" = (() => {
 function FolderIcon({
   px,
   kind,
+  empty,
   className,
 }: {
   px: number;
   kind: Kind;
+  empty?: boolean;
   className?: string;
 }) {
   // System dirs (Library/Applications/Users) get the blue tint regardless of
   // platform — the body of the folder still follows the host OS shape.
   const tinted = kind === "folder_blue";
-  if (PLATFORM === "windows") {
-    return <WindowsFolder px={px} tinted={tinted} className={className} />;
+  // Empty folders: render at reduced opacity, with a small "0" badge in the
+  // bottom-right corner of the icon. Wrapped in a relative container so the
+  // overlay positions correctly without changing the SVG itself.
+  const inner = (() => {
+    if (PLATFORM === "windows") {
+      return <WindowsFolder px={px} tinted={tinted} />;
+    }
+    return <MacFolder px={px} tinted={tinted} />;
+  })();
+  if (!empty) {
+    return <div className={cn("shrink-0", className)}>{inner}</div>;
   }
-  // macOS and Linux both render the macOS-style folder; Linux file managers
-  // vary so much that the macOS shape feels "neutral native" rather than out
-  // of place.
-  return <MacFolder px={px} tinted={tinted} className={className} />;
+  return (
+    <div
+      className={cn("relative shrink-0", className)}
+      title="空文件夹"
+      style={{ width: px, height: px }}
+    >
+      <div className="opacity-50">{inner}</div>
+      {/* dashed outline overlay to read as 'empty' even at a glance */}
+      <div
+        className="absolute inset-[12%] rounded-[15%] border-2 border-dashed border-muted-foreground/40 pointer-events-none"
+        aria-hidden
+      />
+    </div>
+  );
 }
 
 /**

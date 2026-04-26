@@ -174,6 +174,18 @@ function FolderColumn({
           >
             <FileIcon entry={entry} size="sm" thumbnail />
             <span className="truncate flex-1">{entry.name}</span>
+            {entry.is_dir && entry.is_empty && (
+              <span
+                className={cn(
+                  "text-[9px] px-1 rounded shrink-0",
+                  active
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
+                )}
+              >
+                空
+              </span>
+            )}
             {entry.is_dir && (
               <ChevronRight
                 className={cn(
