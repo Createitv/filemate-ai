@@ -11,30 +11,35 @@ import {
   Wand2,
   Eye,
   Cloud,
-  Trash2,
   Settings,
+  Lock,
+  TerminalSquare,
+  Copy,
+  Pencil,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+const main = [
   { to: "/", icon: Home, key: "nav.home", end: true },
   { to: "/files", icon: Folder, key: "nav.files" },
   { to: "/favorites", icon: Star, key: "nav.favorites" },
   { to: "/search", icon: Search, key: "nav.search" },
   { to: "/workspace", icon: LayoutGrid, key: "nav.workspace" },
-  { to: "/ai", icon: Sparkles, key: "nav.ai" },
   { to: "/tags", icon: Tags, key: "nav.tags" },
 ];
 
-const toolItems = [
+const tools = [
   { to: "/automation", icon: Wand2, key: "nav.automation" },
   { to: "/preview", icon: Eye, key: "nav.preview" },
+  { to: "/versions", icon: History, label: "版本历史" },
+  { to: "/rename", icon: Pencil, label: "批量重命名" },
+  { to: "/duplicates", icon: Copy, label: "重复文件" },
+  { to: "/encryption", icon: Lock, label: "加密 / 解密" },
+  { to: "/terminal", icon: TerminalSquare, label: "终端" },
 ];
 
-const cloudItems = [
-  { to: "/cloud/onedrive", icon: Cloud, key: "cloud.onedrive" },
-  { to: "/cloud/gdrive", icon: Cloud, key: "cloud.gdrive" },
-];
+const cloud = [{ to: "/cloud", icon: Cloud, key: "cloud.title" }];
 
 export function Sidebar() {
   const { t } = useTranslation();
@@ -48,27 +53,26 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-2 pb-4 space-y-4">
-        <Group>
-          {navItems.map((it) => (
-            <NavItem key={it.to} {...it} label={t(it.key)} />
+        <div className="space-y-0.5">
+          {main.map((it) => (
+            <Item key={it.to} {...it} label={t(it.key as string)} />
           ))}
-        </Group>
+        </div>
 
         <Section label="工具">
-          {toolItems.map((it) => (
-            <NavItem key={it.to} {...it} label={t(it.key)} />
+          {tools.map((it) => (
+            <Item key={it.to} {...it} label={(it as any).key ? t((it as any).key) : (it as any).label} />
           ))}
         </Section>
 
         <Section label={t("cloud.title")}>
-          {cloudItems.map((it) => (
-            <NavItem key={it.to} {...it} label={t(it.key)} />
+          {cloud.map((it) => (
+            <Item key={it.to} {...it} label={t(it.key as string)} />
           ))}
         </Section>
 
         <div className="border-t border-border/60 pt-3">
-          <NavItem to="/trash" icon={Trash2} label={t("nav.trash")} />
-          <NavItem to="/settings" icon={Settings} label={t("nav.settings")} />
+          <Item to="/settings" icon={Settings} label={t("nav.settings")} />
         </div>
       </nav>
     </aside>
@@ -84,11 +88,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function Group({ children }: { children: React.ReactNode }) {
-  return <div className="space-y-0.5">{children}</div>;
-}
-
-function NavItem({
+function Item({
   to,
   icon: Icon,
   label,

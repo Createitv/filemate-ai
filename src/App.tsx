@@ -6,7 +6,18 @@ import Files from "@/pages/Files";
 import Automation from "@/pages/Automation";
 import Preview from "@/pages/Preview";
 import Settings from "@/pages/Settings";
+import Search from "@/pages/Search";
+import Tags from "@/pages/Tags";
+import Favorites from "@/pages/Favorites";
+import Workspaces from "@/pages/Workspaces";
+import Cloud from "@/pages/Cloud";
+import Terminal from "@/pages/Terminal";
+import Encryption from "@/pages/Encryption";
+import BatchRename from "@/pages/BatchRename";
+import Duplicates from "@/pages/Duplicates";
+import VersionHistory from "@/pages/VersionHistory";
 import { applyTheme, useThemeStore } from "@/stores/theme";
+import { ToastViewport } from "@/components/ui/toast";
 
 export default function App() {
   const theme = useThemeStore();
@@ -20,15 +31,28 @@ export default function App() {
   }, [theme.mode, theme.accent, theme.customAccent, theme]);
 
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<Home />} />
-        <Route path="files" element={<Files />} />
-        <Route path="automation" element={<Automation />} />
-        <Route path="preview" element={<Preview />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+    <>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<Home />} />
+          <Route path="files" element={<Files />} />
+          <Route path="search" element={<Search />} />
+          <Route path="favorites" element={<Favorites />} />
+          <Route path="workspace" element={<Workspaces />} />
+          <Route path="tags" element={<Tags />} />
+          <Route path="automation" element={<Automation />} />
+          <Route path="preview" element={<Preview />} />
+          <Route path="versions" element={<VersionHistory />} />
+          <Route path="rename" element={<BatchRename />} />
+          <Route path="duplicates" element={<Duplicates />} />
+          <Route path="encryption" element={<Encryption />} />
+          <Route path="cloud" element={<Cloud />} />
+          <Route path="terminal" element={<Terminal />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+      <ToastViewport />
+    </>
   );
 }

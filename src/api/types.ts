@@ -1,0 +1,134 @@
+// Type definitions for Tauri command return values. Keep in sync with the
+// Serde-derived structs in src-tauri/src/*.
+
+export interface DirEntryInfo {
+  name: string;
+  path: string;
+  is_dir: boolean;
+  is_symlink: boolean;
+  size: number;
+  modified?: string;
+  created?: string;
+  mime?: string;
+  extension?: string;
+}
+
+export interface DirListing {
+  path: string;
+  parent?: string;
+  entries: DirEntryInfo[];
+}
+
+export interface DiskInfo {
+  name: string;
+  mount_point: string;
+  total: number;
+  available: number;
+  used: number;
+  percent: number;
+  fs: string;
+  removable: boolean;
+}
+
+export interface RecentEntry {
+  path: string;
+  name: string;
+  accessed_at: number;
+  is_dir: boolean;
+}
+
+export interface Bookmark {
+  id: number;
+  path: string;
+  name: string;
+  group_name?: string;
+  sort_order: number;
+  created_at: number;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+  created_at: number;
+}
+
+export interface Workspace {
+  id: number;
+  name: string;
+  state: any;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface SearchHit {
+  path: string;
+  name: string;
+  ext?: string;
+  size: number;
+  modified: number;
+  score: number;
+}
+
+export interface Rule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  trigger: any;
+  conditions: any[];
+  actions: any[];
+}
+
+export interface RuleRecord extends Rule {
+  created_at: number;
+  updated_at: number;
+}
+
+export interface VersionInfo {
+  id: string;
+  file_path: string;
+  version_id: number;
+  timestamp: number;
+  size: number;
+  checksum: string;
+  note?: string;
+  source: string;
+  storage: string;
+}
+
+export interface CloudFile {
+  id: string;
+  name: string;
+  path: string;
+  is_dir: boolean;
+  size: number;
+  modified?: number;
+}
+
+export interface CloudAccount {
+  id: string;
+  provider: "s3" | "onedrive" | "gdrive" | "dropbox" | "webdav";
+  name: string;
+  config: any;
+  created_at: number;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface PreviewMeta {
+  kind: "image" | "video" | "audio" | "text" | "code" | "markdown" | "pdf" | "archive" | "binary" | "unknown";
+  mime?: string;
+  size: number;
+  text?: string;
+  language?: string;
+}
+
+export type FsEvent =
+  | { kind: "created"; path: string }
+  | { kind: "modified"; path: string }
+  | { kind: "removed"; path: string }
+  | { kind: "renamed"; from: string; to: string }
+  | { kind: "other"; path: string };

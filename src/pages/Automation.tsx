@@ -1,26 +1,112 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Folder,
-  FileType,
-  HardDrive,
-  Plus,
-  Trash2,
-  Wand2,
-  Sparkles,
-  ChevronRight,
-  Play,
-} from "lucide-react";
+import { Plus, Trash2, Wand2, Play, Loader2 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import * as api from "@/api";
+import type { Rule, RuleRecord } from "@/api/types";
+import { toast, toastError } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { relativeTime } from "@/lib/format";
+
+const newRule = (): Rule => ({
+  id: crypto.randomUUID(),
+  name: "新规则",
+  enabled: true,
+  trigger: { type: "fs_event", folder: "" },
+  conditions: [],
+  actions: [],
+});
+
+const TEMPLATES: { name: string; build: () => Rule }[] = [
+  {
+    name: "下载清理",
+    build: () => ({
+      id: crypto.randomUUID(),
+      name: "下载清理",
+      enabled: true,
+      trigger: { type: "fs_event", folder: "" },
+      conditions: [{ type: "ext_in", values: ["pdf", "docx", "xlsx", "pptx"] }],
+      actions: [{ type: "move", to: "" }, { type: "tag", name: "归档" }],
+    }),
+  },
+  {
+    name: "大文件提醒",
+    build: () => ({
+      id: crypto.randomUUID(),
+      name: "大文件提醒",
+      enabled: true,
+      trigger: { type: "fs_event", folder: "" },
+      conditions: [{ type: "size_gt", bytes: 1_000_000_000 }],
+      actions: [{ type: "tag", name: "大文件" }],
+    }),
+  },
+  {
+    name: "旧文件归档",
+    build: () => ({
+      id: crypto.randomUUID(),
+      name: "旧文件归档",
+      enabled: true,
+      trigger: { type: "manual" },
+      conditions: [{ type: "older_than_days", days: 180 }],
+      actions: [{ type: "move", to: "" }],
+    }),
+  },
+];
 
 export default function Automation() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<"rules" | "templates" | "history">("rules");
-  const [enabled, setEnabled] = useState(true);
+  const [rules, setRules] = useState<RuleRecord[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [editing, setEditing] = useState<Rule>(newRule());
+  const [busy, setBusy] = useState(false);
+
+  const load = () => api.listRules().then(setRules).catch(toastError);
+  const loadHistory = () => api.listAutomationHistory(50).then(setHistory).catch(() => {});
+  useEffect(() => {
+    load();
+    loadHistory();
+  }, []);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api.saveRule(editing);
+      toast("规则已保存", "success");
+      load();
+    } catch (e) {
+      toastError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      const n = await api.runRule(editing.id);
+      toast(`已处理 ${n} 个文件`, "success");
+      loadHistory();
+    } catch (e) {
+      toastError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id: string) => {
+    await api.deleteRule(id).catch(toastError);
+    load();
+  };
+
+  const pickFolder = async (cb: (p: string) => void) => {
+    const r = await openDialog({ directory: true, multiple: false });
+    if (r) cb(String(r));
+  };
 
   return (
     <div className="flex-1 flex min-w-0">
@@ -34,155 +120,433 @@ export default function Automation() {
               onClick={() => setTab(k)}
               className={cn(
                 "px-3 py-1.5 text-sm rounded-lg",
-                tab === k
-                  ? "bg-secondary font-medium"
-                  : "text-muted-foreground hover:text-foreground"
+                tab === k ? "bg-secondary font-medium" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {t(`automation.tabs.${k}`)}
             </button>
           ))}
+          <div className="flex-1" />
+          {tab === "rules" && (
+            <Button size="sm" variant="outline" onClick={() => setEditing(newRule())}>
+              <Plus className="w-3.5 h-3.5" /> 新规则
+            </Button>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-5">
-          {/* Rule header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-lg">{t("automation.rule_name")}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">规则将在文件进入下载文件夹时自动执行</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Toggle on={enabled} onChange={setEnabled} label={t("automation.enabled")} />
-            </div>
-          </div>
+        {tab === "rules" && (
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <Card className="p-4 flex items-center gap-3">
+              <Input
+                value={editing.name}
+                onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                className="flex-1 font-medium"
+              />
+              <Toggle
+                on={editing.enabled}
+                onChange={(v) => setEditing({ ...editing, enabled: v })}
+                label="启用"
+              />
+            </Card>
 
-          {/* If block */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded bg-primary text-primary-foreground text-xs font-medium">
-                  {t("automation.if")}
-                </span>
-                <CardTitle>{t("automation.trigger")}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Condition icon={Folder} label={t("automation.monitor_folder")} value="C:\\Users\\Ling\\Downloads" />
-              <Condition icon={FileType} label={t("automation.file_type")} value="pdf, docx, xlsx, pptx" />
-              <Condition icon={HardDrive} label={t("automation.file_size")} value="< 100 MB" />
-              <button className="text-sm text-primary flex items-center gap-1.5 mt-2">
-                <Plus className="w-3.5 h-3.5" /> 添加条件
-              </button>
-            </CardContent>
-          </Card>
-
-          {/* Then block */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded bg-emerald-500 text-white text-xs font-medium">
-                  {t("automation.then")}
-                </span>
-                <CardTitle>{t("automation.action")}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Condition icon={Folder} label={t("automation.move_to")} value="D:\\工作文件\\归档" />
-              <Condition icon={FileType} label={t("automation.rename_with")} value="{date}_{name}" />
-              <Condition icon={Sparkles} label={t("automation.add_tag")} value="自动归档" />
-            </CardContent>
-          </Card>
-
-          <div className="flex items-center justify-end gap-2">
-            <Button variant="outline">
-              <Play className="w-3.5 h-3.5" /> {t("automation.test_run")}
-            </Button>
-            <Button>
-              {t("automation.save")}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right panel: templates + history */}
-      <aside className="w-80 shrink-0 border-l border-border/60 overflow-y-auto scrollbar-thin p-5 space-y-5 bg-gradient-to-b from-accent/30 to-background">
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-medium">{t("automation.templates_title")}</span>
-            <button className="text-xs text-primary flex items-center">
-              查看更多 <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="space-y-2">
-            {[
-              { icon: Wand2, name: "照片自动归档", color: "from-rose-500 to-pink-500" },
-              { icon: Wand2, name: "下载清理", color: "from-blue-500 to-cyan-500" },
-              { icon: Wand2, name: "大文件提醒", color: "from-amber-500 to-orange-500" },
-              { icon: Wand2, name: "旧文件归档", color: "from-emerald-500 to-teal-500" },
-            ].map((tpl) => (
-              <Card key={tpl.name} className="p-3 flex items-center gap-3 cursor-pointer hover:shadow-md transition">
-                <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${tpl.color} flex items-center justify-center`}>
-                  <tpl.icon className="w-4 h-4 text-white" />
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-primary text-primary-foreground text-xs font-medium">
+                    {t("automation.if")}
+                  </span>
+                  <CardTitle>{t("automation.trigger")}</CardTitle>
                 </div>
-                <div className="text-sm font-medium">{tpl.name}</div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <SelectField
+                  label="触发"
+                  value={editing.trigger?.type || "fs_event"}
+                  options={[
+                    ["fs_event", "目录有文件变化"],
+                    ["manual", "手动运行"],
+                  ]}
+                  onChange={(v) => setEditing({ ...editing, trigger: { ...editing.trigger, type: v } })}
+                />
+                {editing.trigger?.type === "fs_event" && (
+                  <Row label="监听目录">
+                    <Input
+                      className="flex-1"
+                      value={editing.trigger?.folder || ""}
+                      onChange={(e) =>
+                        setEditing({ ...editing, trigger: { ...editing.trigger, folder: e.target.value } })
+                      }
+                    />
+                    <Button variant="outline" size="sm" onClick={() => pickFolder((p) => setEditing({ ...editing, trigger: { ...editing.trigger, folder: p } }))}>
+                      选择
+                    </Button>
+                  </Row>
+                )}
+                {editing.conditions.map((c, i) => (
+                  <ConditionRow
+                    key={i}
+                    cond={c}
+                    onChange={(c) => {
+                      const next = [...editing.conditions];
+                      next[i] = c;
+                      setEditing({ ...editing, conditions: next });
+                    }}
+                    onRemove={() =>
+                      setEditing({
+                        ...editing,
+                        conditions: editing.conditions.filter((_, j) => j !== i),
+                      })
+                    }
+                  />
+                ))}
+                <button
+                  className="text-sm text-primary flex items-center gap-1.5 mt-2"
+                  onClick={() =>
+                    setEditing({
+                      ...editing,
+                      conditions: [...editing.conditions, { type: "ext_in", values: [] }],
+                    })
+                  }
+                >
+                  <Plus className="w-3.5 h-3.5" /> 添加条件
+                </button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500 text-white text-xs font-medium">
+                    {t("automation.then")}
+                  </span>
+                  <CardTitle>{t("automation.action")}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {editing.actions.map((a, i) => (
+                  <ActionRow
+                    key={i}
+                    action={a}
+                    onPickFolder={pickFolder}
+                    onChange={(a) => {
+                      const next = [...editing.actions];
+                      next[i] = a;
+                      setEditing({ ...editing, actions: next });
+                    }}
+                    onRemove={() =>
+                      setEditing({
+                        ...editing,
+                        actions: editing.actions.filter((_, j) => j !== i),
+                      })
+                    }
+                  />
+                ))}
+                <button
+                  className="text-sm text-primary flex items-center gap-1.5 mt-2"
+                  onClick={() =>
+                    setEditing({ ...editing, actions: [...editing.actions, { type: "move", to: "" }] })
+                  }
+                >
+                  <Plus className="w-3.5 h-3.5" /> 添加动作
+                </button>
+              </CardContent>
+            </Card>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" onClick={run} disabled={busy}>
+                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                {t("automation.test_run")}
+              </Button>
+              <Button onClick={save} disabled={busy}>
+                {t("automation.save")}
+              </Button>
+            </div>
+
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-2">已有规则</div>
+              <div className="grid grid-cols-2 gap-3">
+                {rules.map((r) => (
+                  <Card key={r.id} className="p-4 group">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium truncate">{r.name}</div>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded ${
+                              r.enabled
+                                ? "bg-emerald-500/10 text-emerald-600"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {r.enabled ? "启用" : "停用"}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {r.conditions.length} 条件 · {r.actions.length} 动作
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setEditing(r)}
+                        className="text-xs text-primary"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        onClick={() => remove(r.id)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-rose-500"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === "templates" && (
+          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 gap-4">
+            {TEMPLATES.map((tpl) => (
+              <Card key={tpl.name} className="p-5 cursor-pointer hover:shadow-md" onClick={() => setEditing(tpl.build())}>
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mb-3">
+                  <Wand2 className="w-4 h-4 text-white" />
+                </div>
+                <div className="font-medium">{tpl.name}</div>
+                <div className="text-xs text-muted-foreground mt-1">点击载入到编辑器</div>
               </Card>
             ))}
           </div>
-        </div>
+        )}
 
-        <div>
-          <div className="font-medium mb-3">{t("automation.history_title")}</div>
-          <div className="space-y-2 text-xs">
-            {[
-              { name: "下载清理", time: "10 分钟前", count: "整理 23 个文件" },
-              { name: "照片归档", time: "今天 09:30", count: "整理 156 张照片" },
-              { name: "大文件提醒", time: "昨天 18:00", count: "标记 4 个文件" },
-            ].map((h) => (
-              <div key={h.time} className="flex items-center justify-between rounded-lg bg-card border border-border/60 p-2.5">
+        {tab === "history" && (
+          <div className="flex-1 overflow-y-auto p-6 space-y-2">
+            {history.map((h, i) => (
+              <Card key={i} className="p-3 flex items-center justify-between text-sm">
                 <div>
-                  <div className="text-sm">{h.name}</div>
-                  <div className="text-muted-foreground mt-0.5">{h.count}</div>
+                  <div className="font-medium">{h.rule_name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    影响 {h.affected} 项 · {h.detail}
+                  </div>
                 </div>
-                <div className="text-muted-foreground">{h.time}</div>
-              </div>
+                <div className="text-xs text-muted-foreground">{relativeTime(h.occurred_at)}</div>
+              </Card>
             ))}
+            {history.length === 0 && (
+              <div className="text-center text-sm text-muted-foreground py-12">
+                还没有执行记录
+              </div>
+            )}
           </div>
-        </div>
-      </aside>
+        )}
+      </div>
     </div>
   );
 }
 
-function Condition({
-  icon: Icon,
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
+      <span className="text-sm text-muted-foreground w-24 shrink-0">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function SelectField({
   label,
   value,
+  options,
+  onChange,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
+  options: [string, string][];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Row label={label}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm"
+      >
+        {options.map(([v, l]) => (
+          <option key={v} value={v}>
+            {l}
+          </option>
+        ))}
+      </select>
+    </Row>
+  );
+}
+
+function ConditionRow({
+  cond,
+  onChange,
+  onRemove,
+}: {
+  cond: any;
+  onChange: (c: any) => void;
+  onRemove: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
-      <Icon className="w-4 h-4 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground w-24 shrink-0">{label}</span>
-      <Input className="flex-1 bg-background" defaultValue={value} />
-      <button className="p-1.5 text-muted-foreground hover:text-rose-500">
+      <select
+        value={cond.type}
+        onChange={(e) => onChange({ type: e.target.value, ...defaultsForCondition(e.target.value) })}
+        className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+      >
+        <option value="ext_in">扩展名属于</option>
+        <option value="name_contains">文件名包含</option>
+        <option value="size_gt">大小 大于</option>
+        <option value="size_lt">大小 小于</option>
+        <option value="older_than_days">最近未访问 超过</option>
+      </select>
+      {cond.type === "ext_in" && (
+        <Input
+          className="flex-1"
+          value={(cond.values || []).join(",")}
+          onChange={(e) =>
+            onChange({ ...cond, values: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })
+          }
+          placeholder="pdf,docx,xlsx"
+        />
+      )}
+      {cond.type === "name_contains" && (
+        <Input
+          className="flex-1"
+          value={cond.value || ""}
+          onChange={(e) => onChange({ ...cond, value: e.target.value })}
+        />
+      )}
+      {(cond.type === "size_gt" || cond.type === "size_lt") && (
+        <Input
+          className="flex-1"
+          type="number"
+          value={cond.bytes || 0}
+          onChange={(e) => onChange({ ...cond, bytes: Number(e.target.value) })}
+          placeholder="字节"
+        />
+      )}
+      {cond.type === "older_than_days" && (
+        <Input
+          className="flex-1"
+          type="number"
+          value={cond.days || 30}
+          onChange={(e) => onChange({ ...cond, days: Number(e.target.value) })}
+          placeholder="天数"
+        />
+      )}
+      <button onClick={onRemove} className="text-muted-foreground hover:text-rose-500">
         <Trash2 className="w-3.5 h-3.5" />
       </button>
     </div>
   );
 }
 
-function Toggle({
-  on,
+function ActionRow({
+  action,
   onChange,
-  label,
+  onRemove,
+  onPickFolder,
 }: {
-  on: boolean;
-  onChange: (v: boolean) => void;
-  label?: string;
+  action: any;
+  onChange: (a: any) => void;
+  onRemove: () => void;
+  onPickFolder: (cb: (p: string) => void) => void;
 }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
+      <select
+        value={action.type}
+        onChange={(e) => onChange({ type: e.target.value, ...defaultsForAction(e.target.value) })}
+        className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+      >
+        <option value="move">移动到</option>
+        <option value="copy">复制到</option>
+        <option value="rename">重命名为</option>
+        <option value="tag">添加标签</option>
+        <option value="delete">删除</option>
+        <option value="shell">执行命令</option>
+      </select>
+      {(action.type === "move" || action.type === "copy") && (
+        <>
+          <Input
+            className="flex-1"
+            value={action.to || ""}
+            onChange={(e) => onChange({ ...action, to: e.target.value })}
+            placeholder="目标目录"
+          />
+          <Button variant="outline" size="sm" onClick={() => onPickFolder((p) => onChange({ ...action, to: p }))}>
+            选择
+          </Button>
+        </>
+      )}
+      {action.type === "rename" && (
+        <Input
+          className="flex-1"
+          value={action.template || ""}
+          onChange={(e) => onChange({ ...action, template: e.target.value })}
+          placeholder="{date}_{name}"
+        />
+      )}
+      {action.type === "tag" && (
+        <Input
+          className="flex-1"
+          value={action.name || ""}
+          onChange={(e) => onChange({ ...action, name: e.target.value })}
+          placeholder="标签名"
+        />
+      )}
+      {action.type === "shell" && (
+        <Input
+          className="flex-1"
+          value={action.cmd || ""}
+          onChange={(e) => onChange({ ...action, cmd: e.target.value })}
+          placeholder="echo $PATH"
+        />
+      )}
+      {action.type === "delete" && <span className="flex-1 text-xs text-muted-foreground">移到回收站</span>}
+      <button onClick={onRemove} className="text-muted-foreground hover:text-rose-500">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function defaultsForCondition(type: string): any {
+  switch (type) {
+    case "ext_in":
+      return { values: [] };
+    case "name_contains":
+      return { value: "" };
+    case "size_gt":
+    case "size_lt":
+      return { bytes: 1_000_000 };
+    case "older_than_days":
+      return { days: 30 };
+    default:
+      return {};
+  }
+}
+function defaultsForAction(type: string): any {
+  switch (type) {
+    case "move":
+    case "copy":
+      return { to: "" };
+    case "rename":
+      return { template: "{date}_{name}" };
+    case "tag":
+      return { name: "" };
+    case "shell":
+      return { cmd: "" };
+    default:
+      return {};
+  }
+}
+
+function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
     <button
       onClick={() => onChange(!on)}
@@ -191,12 +555,7 @@ function Toggle({
         on ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/40"
       )}
     >
-      <span
-        className={cn(
-          "w-8 h-4 rounded-full relative transition-colors",
-          on ? "bg-primary" : "bg-muted-foreground/30"
-        )}
-      >
+      <span className={cn("w-8 h-4 rounded-full relative transition-colors", on ? "bg-primary" : "bg-muted-foreground/30")}>
         <span
           className={cn(
             "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",

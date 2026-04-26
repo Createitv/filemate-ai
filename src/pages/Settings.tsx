@@ -1,20 +1,50 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { ACCENT_PRESETS, useThemeStore, type ThemeMode } from "@/stores/theme";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { Sun, Moon, Monitor, Check } from "lucide-react";
+import * as api from "@/api";
+import { toast, toastError } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
   const { mode, accent, setMode, setAccent } = useThemeStore();
+  const [ollamaHost, setOllamaHost] = useState("");
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    api.getSetting<string>("ollama_host").then((v) => v && setOllamaHost(v));
+    api.appVersion().then(setVersion).catch(() => {});
+  }, []);
+
+  // persist theme + language to backend on change
+  useEffect(() => {
+    api.setSetting("theme.mode", mode).catch(() => {});
+    api.setSetting("theme.accent", accent).catch(() => {});
+  }, [mode, accent]);
+  useEffect(() => {
+    api.setSetting("language", i18n.language).catch(() => {});
+  }, [i18n.language]);
 
   const modes: { id: ThemeMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "light", label: t("settings.theme_light"), icon: Sun },
     { id: "dark", label: t("settings.theme_dark"), icon: Moon },
     { id: "system", label: t("settings.theme_system"), icon: Monitor },
   ];
+
+  const saveOllama = async () => {
+    try {
+      await api.setSetting("ollama_host", ollamaHost);
+      toast("已保存", "success");
+    } catch (e) {
+      toastError(e);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -85,6 +115,34 @@ export default function Settings() {
                 </button>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("settings.ai")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-xs text-muted-foreground">
+              FileMate 默认连接本地 <code>http://127.0.0.1:11434</code> 上的 Ollama 服务。如需自定义，可在此填写并重启应用。
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="http://127.0.0.1:11434"
+                value={ollamaHost}
+                onChange={(e) => setOllamaHost(e.target.value)}
+              />
+              <Button onClick={saveOllama}>保存</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("settings.general")}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            版本 v{version || "—"}
           </CardContent>
         </Card>
       </div>
