@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Cloud as CloudIcon, Plus, Trash2, FolderOpen, Upload, Download, Folder, FileText } from "lucide-react";
+import { Cloud as CloudIcon, Plus, Trash2, Upload, Download, Folder, FileText } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

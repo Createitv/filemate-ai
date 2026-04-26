@@ -24,7 +24,6 @@ import {
   Trash2,
   Tag,
   History,
-  Sparkles,
   Settings as SettingsIcon,
   ExternalLink,
   FolderOpen as FolderOpenIcon,

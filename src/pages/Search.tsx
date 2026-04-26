@@ -77,7 +77,7 @@ export default function Search() {
               onKeyDown={(e) => e.key === "Enter" && search()}
             />
           </div>
-          <Button onClick={search} disabled={busy}>
+          <Button onClick={() => search()} disabled={busy}>
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <SearchIcon className="w-4 h-4" />}
             搜索
           </Button>
