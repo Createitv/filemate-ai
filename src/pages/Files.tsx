@@ -497,7 +497,13 @@ function FileList({
         {entries.map((e) => (
             <tr
               key={e.path}
-              onClick={(ev) => onSelect(ev, e)}
+              onClick={(ev) => {
+                // Single-click navigates into folders (Explorer-style);
+                // for files, single-click still just selects so multi-select
+                // and Space → QuickLook still work.
+                if (e.is_dir) onActivate(e);
+                else onSelect(ev, e);
+              }}
               onDoubleClick={() => onActivate(e)}
               onContextMenu={(ev) => onContextMenu(ev, e)}
               className={cn(
@@ -543,7 +549,10 @@ function FileGrid({
       {entries.map((e) => (
         <div
           key={e.path}
-          onClick={(ev) => onSelect(ev, e)}
+          onClick={(ev) => {
+            if (e.is_dir) onActivate(e);
+            else onSelect(ev, e);
+          }}
           onDoubleClick={() => onActivate(e)}
           onContextMenu={(ev) => onContextMenu(ev, e)}
           className={cn(
