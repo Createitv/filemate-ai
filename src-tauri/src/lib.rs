@@ -9,6 +9,7 @@ mod archive;
 mod automation;
 mod batch;
 mod bookmarks;
+mod cleanup;
 mod cloud;
 mod db;
 mod disk;
@@ -90,6 +91,10 @@ pub fn run() {
             open_with::reveal_in_folder,
             // disk
             disk::list_disks,
+            cleanup::cache_dirs,
+            cleanup::trash_stats,
+            cleanup::clear_cache_dir,
+            cleanup::empty_trash,
             // settings
             settings::get_setting,
             settings::set_setting,

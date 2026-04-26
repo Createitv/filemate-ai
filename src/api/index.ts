@@ -61,6 +61,15 @@ export const revealInFolder = (path: string) =>
 // ---------- disk ----------
 export const listDisks = () => invoke<DiskInfo[]>("list_disks");
 
+// ---------- cleanup ----------
+export const cacheDirs = () =>
+  invoke<import("./types").CacheDir[]>("cache_dirs");
+export const trashStats = () =>
+  invoke<import("./types").TrashStats>("trash_stats");
+export const clearCacheDir = (path: string) =>
+  invoke<number>("clear_cache_dir", { path });
+export const emptyTrash = () => invoke<void>("empty_trash");
+
 // ---------- settings ----------
 export const getSetting = <T = any>(key: string) =>
   invoke<T | null>("get_setting", { key });

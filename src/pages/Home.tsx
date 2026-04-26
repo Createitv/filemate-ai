@@ -237,7 +237,7 @@ export default function Home() {
                     variant="outline"
                     size="sm"
                     className="w-full mt-4"
-                    onClick={() => navigate("/analyze")}
+                    onClick={() => navigate("/storage")}
                   >
                     {t("home.manage_storage")}
                   </Button>
@@ -367,13 +367,13 @@ function StorageRing({
   return (
     <div className="relative w-36 h-36 mx-auto">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-        <circle cx="40" cy="40" r={r} stroke="hsl(var(--border))" strokeWidth="8" fill="none" />
+        <circle cx="40" cy="40" r={r} stroke="hsl(var(--border))" strokeWidth="3" fill="none" />
         <circle
           cx="40"
           cy="40"
           r={r}
           stroke={ringColor}
-          strokeWidth="8"
+          strokeWidth="3"
           fill="none"
           strokeLinecap="round"
           strokeDasharray={circumference}

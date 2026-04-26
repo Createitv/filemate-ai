@@ -18,11 +18,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import * as api from "@/api";
-import type { FilenameIndexStatus, IndexedEntry } from "@/api/types";
+import type { IndexedEntry } from "@/api/types";
 import { formatBytes, formatTime } from "@/lib/format";
 import { toastError } from "@/components/ui/toast";
 import { FileIcon } from "@/components/FileIcon";
 import { cn } from "@/lib/utils";
+import { useIndexStatus, refreshIndexStatus } from "@/stores/indexStatus";
 
 export default function Search() {
   const [searchParams] = useSearchParams();
@@ -33,45 +34,12 @@ export default function Search() {
   const [hits, setHits] = useState<IndexedEntry[]>([]);
   const [elapsed, setElapsed] = useState<number | null>(null);
   const [active, setActive] = useState<string | null>(null);
-  const [status, setStatus] = useState<FilenameIndexStatus | null>(null);
+  // Status comes from the global store — already polled by TopBar, so the
+  // Search page just observes. No auto-build trigger here: the backend
+  // starts a scan on app launch.
+  const status = useIndexStatus();
 
-  // Boot: read status, kick off a build over $HOME if the index is empty.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const s = await api.filenameIndexStatus();
-        if (cancelled) return;
-        setStatus(s);
-        if (!s.indexing && s.count === 0) {
-          const home = await api.homeDir();
-          if (!cancelled) ensureIndex(home);
-        }
-      } catch (e) {
-        toastError(e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Poll status while indexing so the UI shows progress.
-  useEffect(() => {
-    if (!status?.indexing) return;
-    const t = setInterval(async () => {
-      try {
-        const s = await api.filenameIndexStatus();
-        setStatus(s);
-        if (!s.indexing) clearInterval(t);
-      } catch {}
-    }, 400);
-    return () => clearInterval(t);
-  }, [status?.indexing]);
-
-  // Synchronous-ish query: index is in-memory, so no debounce needed.
-  // We still skip empty queries and cap result count.
+  // Synchronous-ish query: index is in-memory, no debounce needed.
   const reqIdRef = useRef(0);
   useEffect(() => {
     const query = q.trim();
@@ -97,20 +65,12 @@ export default function Search() {
   }, [q, status?.count, status?.indexing]);
 
   const ensureIndex = async (root: string) => {
-    setStatus((s) => ({
-      root,
-      count: 0,
-      indexing: true,
-      progress: 0,
-      built_at: s?.built_at ?? 0,
-    }));
     try {
       await api.buildFilenameIndex(root);
-      const s = await api.filenameIndexStatus();
-      setStatus(s);
+      await refreshIndexStatus();
     } catch (e) {
       toastError(e);
-      setStatus((s) => (s ? { ...s, indexing: false } : s));
+      await refreshIndexStatus();
     }
   };
 

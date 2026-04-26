@@ -36,6 +36,19 @@ export interface DiskInfo {
   removable: boolean;
 }
 
+export interface CacheDir {
+  label: string;
+  path: string;
+  size: number;
+  item_count: number;
+}
+
+export interface TrashStats {
+  path: string;
+  size: number;
+  item_count: number;
+}
+
 export interface RecentEntry {
   path: string;
   name: string;

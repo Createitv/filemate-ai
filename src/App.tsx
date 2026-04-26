@@ -18,6 +18,7 @@ import Duplicates from "@/pages/Duplicates";
 import VersionHistory from "@/pages/VersionHistory";
 import AIProviders from "@/pages/AIProviders";
 import Analyze from "@/pages/Analyze";
+import Storage from "@/pages/Storage";
 import { applyTheme, useThemeStore } from "@/stores/theme";
 import { ToastViewport } from "@/components/ui/toast";
 import { QuickLook } from "@/components/preview/QuickLook";
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="terminal" element={<Terminal />} />
           <Route path="ai-providers" element={<AIProviders />} />
           <Route path="analyze" element={<Analyze />} />
+          <Route path="storage" element={<Storage />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
