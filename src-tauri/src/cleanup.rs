@@ -30,6 +30,14 @@ pub struct TrashStats {
     pub item_count: u64,
 }
 
+#[derive(Serialize, Clone, Debug)]
+pub struct OldFilesReport {
+    pub path: String,
+    pub size: u64,
+    pub item_count: u64,
+    pub sample: Vec<String>, // up to 10 file paths
+}
+
 // ---------- discovery ---------------------------------------------------
 
 #[tauri::command]
@@ -143,6 +151,114 @@ fn dir_stats(p: &Path) -> (u64, u64) {
         }
     }
     (size, count)
+}
+
+/// Walk a directory and report files whose mtime is older than `days` days.
+/// Returns aggregate size + count + a small sample for UI preview. Read-only.
+#[tauri::command]
+pub async fn old_files_in(path: String, days: u64) -> AppResult<OldFilesReport> {
+    tokio::task::spawn_blocking(move || -> AppResult<OldFilesReport> {
+        let p = PathBuf::from(&path);
+        if !p.is_dir() {
+            return Ok(OldFilesReport {
+                path,
+                size: 0,
+                item_count: 0,
+                sample: vec![],
+            });
+        }
+        let cutoff = std::time::SystemTime::now()
+            .checked_sub(std::time::Duration::from_secs(days * 86_400))
+            .unwrap_or(std::time::UNIX_EPOCH);
+
+        let mut size = 0u64;
+        let mut count = 0u64;
+        let mut sample: Vec<String> = Vec::new();
+
+        for entry in WalkDir::new(&p).max_depth(6).into_iter().filter_map(|e| e.ok()) {
+            if !entry.file_type().is_file() {
+                continue;
+            }
+            let meta = match entry.metadata() {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            let modified = match meta.modified() {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            if modified > cutoff {
+                continue;
+            }
+            size += meta.len();
+            count += 1;
+            if sample.len() < 10 {
+                sample.push(entry.path().to_string_lossy().to_string());
+            }
+        }
+
+        Ok(OldFilesReport {
+            path,
+            size,
+            item_count: count,
+            sample,
+        })
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?
+}
+
+/// Delete files older than `days` days inside a whitelisted user directory
+/// (Downloads only for safety). Returns bytes freed.
+#[tauri::command]
+pub async fn clear_old_files_in(path: String, days: u64) -> AppResult<u64> {
+    let home = dirs::home_dir().ok_or_else(|| AppError::Path("no home dir".into()))?;
+    let allowed = [home.join("Downloads")];
+    let p = PathBuf::from(&path);
+    if !allowed.iter().any(|a| a == &p) {
+        return Err(AppError::Other(
+            "path not in old-cleanup whitelist (Downloads only); refusing".into(),
+        ));
+    }
+
+    let cutoff = std::time::SystemTime::now()
+        .checked_sub(std::time::Duration::from_secs(days * 86_400))
+        .unwrap_or(std::time::UNIX_EPOCH);
+
+    tokio::task::spawn_blocking(move || -> AppResult<u64> {
+        let mut freed = 0u64;
+        for entry in fs::read_dir(&p)? {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+            let child = entry.path();
+            let meta = match entry.metadata() {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            let modified = match meta.modified() {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            if modified > cutoff {
+                continue;
+            }
+            // move to trash so users can recover
+            if let Err(e) = trash::delete(&child) {
+                tracing::warn!("trash failed, falling back to remove: {e}");
+                if meta.is_dir() {
+                    let _ = fs::remove_dir_all(&child);
+                } else {
+                    let _ = fs::remove_file(&child);
+                }
+            }
+            freed += meta.len();
+        }
+        Ok(freed)
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 // ---------- destructive ops ---------------------------------------------

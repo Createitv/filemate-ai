@@ -49,6 +49,13 @@ export interface TrashStats {
   item_count: number;
 }
 
+export interface OldFilesReport {
+  path: string;
+  size: number;
+  item_count: number;
+  sample: string[];
+}
+
 export interface RecentEntry {
   path: string;
   name: string;

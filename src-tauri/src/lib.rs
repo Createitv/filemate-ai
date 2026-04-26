@@ -95,6 +95,8 @@ pub fn run() {
             cleanup::trash_stats,
             cleanup::clear_cache_dir,
             cleanup::empty_trash,
+            cleanup::old_files_in,
+            cleanup::clear_old_files_in,
             // settings
             settings::get_setting,
             settings::set_setting,

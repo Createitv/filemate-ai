@@ -69,6 +69,10 @@ export const trashStats = () =>
 export const clearCacheDir = (path: string) =>
   invoke<number>("clear_cache_dir", { path });
 export const emptyTrash = () => invoke<void>("empty_trash");
+export const oldFilesIn = (path: string, days: number) =>
+  invoke<import("./types").OldFilesReport>("old_files_in", { path, days });
+export const clearOldFilesIn = (path: string, days: number) =>
+  invoke<number>("clear_old_files_in", { path, days });
 
 // ---------- settings ----------
 export const getSetting = <T = any>(key: string) =>
