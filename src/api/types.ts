@@ -262,6 +262,22 @@ export interface AppInfo {
   kind: "macos_app" | "linux_desktop" | "windows_exec";
 }
 
+export interface IndexedEntry {
+  name: string;
+  path: string;
+  is_dir: boolean;
+  size: number;
+  modified: number;
+}
+
+export interface FilenameIndexStatus {
+  root: string | null;
+  count: number;
+  indexing: boolean;
+  progress: number;
+  built_at: number;
+}
+
 export type FsEvent =
   | { kind: "created"; path: string }
   | { kind: "modified"; path: string }

@@ -20,6 +20,7 @@ mod open_with;
 mod preview;
 mod recents;
 mod search;
+mod filename_index;
 mod settings;
 mod state;
 mod tags;
@@ -117,6 +118,9 @@ pub fn run() {
             search::remove_path_from_index,
             search::search_index,
             search::search_filenames,
+            filename_index::build_filename_index,
+            filename_index::filename_index_status,
+            filename_index::query_filename_index,
             // watcher
             watcher::watch_dir,
             watcher::unwatch,

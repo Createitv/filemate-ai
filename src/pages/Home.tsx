@@ -351,28 +351,42 @@ function StorageRing({
   used: number;
   total: number;
 }) {
-  const circumference = 2 * Math.PI * 36;
-  const offset = circumference - (percent / 100) * circumference;
+  // Ring geometry: 80×80 viewBox, stroke 8 → outer r=36, inner r=28.
+  // Text lives inside the inner radius (~70 % of width) so it never
+  // crosses the stroke even with long byte counts like "456 GB / 500 GB".
+  const r = 36;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference - (Math.min(100, Math.max(0, percent)) / 100) * circumference;
+  const ringColor =
+    percent > 90
+      ? "hsl(346 77% 55%)"
+      : percent > 75
+      ? "hsl(38 92% 50%)"
+      : "hsl(var(--primary))";
+
   return (
-    <div className="relative w-28 h-28">
+    <div className="relative w-36 h-36 mx-auto">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-        <circle cx="40" cy="40" r="36" stroke="hsl(var(--border))" strokeWidth="6" fill="none" />
+        <circle cx="40" cy="40" r={r} stroke="hsl(var(--border))" strokeWidth="8" fill="none" />
         <circle
           cx="40"
           cy="40"
-          r="36"
-          stroke="hsl(var(--primary))"
-          strokeWidth="6"
+          r={r}
+          stroke={ringColor}
+          strokeWidth="8"
           fill="none"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-2xl font-semibold">{percent}%</div>
-        <div className="text-[10px] text-muted-foreground">
-          {formatBytes(used)} / {formatBytes(total)}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+        <div className="text-xl font-semibold leading-none tabular-nums">{percent}%</div>
+        <div className="mt-1 text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
+          {formatBytes(used)}
+        </div>
+        <div className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
+          / {formatBytes(total)}
         </div>
       </div>
     </div>

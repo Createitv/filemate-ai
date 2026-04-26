@@ -67,9 +67,10 @@ pub async fn watch_dir(
                     for ev in events {
                         for fe in to_fs_events(&ev.event, &ev.paths) {
                             let _ = app_for_thread.emit("fs:event", &fe);
-                            // forward to automation engine (best-effort)
+                            // forward to automation engine + filename index (best-effort)
                             if let Some(state) = app_for_thread.try_state::<AppState>() {
                                 crate::automation::on_event(&app_for_thread, &state, &fe);
+                                state.filename_index.apply_event(&fe);
                             }
                         }
                     }

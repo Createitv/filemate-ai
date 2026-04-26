@@ -17,7 +17,6 @@ import {
   Image as ImageIcon,
   Video,
   Music,
-  HardDrive,
   Tag as TagIcon,
   Cloud as CloudIcon,
   ChevronDown,
@@ -30,8 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as api from "@/api";
-import type { Bookmark, DiskInfo, Tag, UserDir, CloudAccount } from "@/api/types";
-import { formatBytes } from "@/lib/format";
+import type { Bookmark, Tag, UserDir, CloudAccount } from "@/api/types";
 
 const DIR_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   home: Home,
@@ -59,7 +57,6 @@ export function Sidebar() {
 
   const [userDirs, setUserDirs] = useState<UserDir[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [disks, setDisks] = useState<DiskInfo[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [clouds, setClouds] = useState<CloudAccount[]>([]);
   const [toolsOpen, setToolsOpen] = useState(true);
@@ -67,7 +64,6 @@ export function Sidebar() {
   useEffect(() => {
     api.listUserDirs().then(setUserDirs).catch(() => {});
     api.listBookmarks().then(setBookmarks).catch(() => {});
-    api.listDisks().then(setDisks).catch(() => {});
     api.listTags().then(setTags).catch(() => {});
     api.listCloudAccounts().then(setClouds).catch(() => {});
   }, []);
@@ -225,48 +221,7 @@ export function Sidebar() {
           )}
         </div>
       </nav>
-
-      <StorageStrip disks={disks} onClick={() => goPath("/")} />
     </aside>
-  );
-}
-
-function StorageStrip({ disks, onClick }: { disks: DiskInfo[]; onClick: () => void }) {
-  if (disks.length === 0) return null;
-  // Use the primary (first) disk for the headline; on macOS that's '/'.
-  const primary = disks[0];
-  const used = primary.used;
-  const total = primary.total;
-  const percent = Math.min(100, Math.max(0, primary.percent));
-  const free = total - used;
-
-  // Color thresholds match the rest of the app.
-  const barColor =
-    percent > 90 ? "bg-rose-500" : percent > 75 ? "bg-amber-500" : "bg-primary";
-
-  return (
-    <button
-      onClick={onClick}
-      title="点击打开系统盘"
-      className="m-2 mt-0 px-3 py-2 rounded-xl bg-card/60 hover:bg-accent/40 border border-border/40 transition-colors text-left"
-    >
-      <div className="flex items-center gap-2">
-        <HardDrive className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-        <span className="text-xs font-medium truncate flex-1">存储</span>
-        <span className="text-[10px] tabular-nums text-muted-foreground">
-          {Math.round(percent)}%
-        </span>
-      </div>
-      <div className="mt-1.5 h-1 rounded-full bg-secondary overflow-hidden">
-        <div
-          className={cn("h-full transition-all", barColor)}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <div className="mt-1 text-[10px] text-muted-foreground tabular-nums truncate">
-        可用 {formatBytes(free)} / {formatBytes(total)}
-      </div>
-    </button>
   );
 }
 

@@ -115,6 +115,14 @@ export const searchIndex = (query: string, limit = 100) =>
 export const searchFilenames = (path: string, pattern: string, limit = 500) =>
   invoke<DirEntryInfo[]>("search_filenames", { path, pattern, limit });
 
+// fast in-memory filename index (Everything-style)
+export const buildFilenameIndex = (root: string) =>
+  invoke<number>("build_filename_index", { root });
+export const filenameIndexStatus = () =>
+  invoke<import("./types").FilenameIndexStatus>("filename_index_status");
+export const queryFilenameIndex = (pattern: string, limit = 500) =>
+  invoke<import("./types").IndexedEntry[]>("query_filename_index", { pattern, limit });
+
 // ---------- watcher ----------
 export const watchDir = (path: string) => invoke<void>("watch_dir", { path });
 export const unwatch = () => invoke<void>("unwatch");
