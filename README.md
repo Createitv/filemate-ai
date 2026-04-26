@@ -23,7 +23,7 @@
 npm install
 npm run tauri:dev          # 启动 Tauri 桌面壳 + Vite HMR
 # 仅看前端：
-npm run dev                # http://localhost:1420
+npm run dev                # http://localhost:1421
 ```
 
 ## 生产构建
