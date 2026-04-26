@@ -2,166 +2,316 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
-  Sparkles,
-  Wand2,
-  History,
-  Eye,
+  Monitor,
+  Download,
   FileText,
+  Image as ImageIcon,
   Folder,
+  HardDrive,
   ChevronRight,
+  Sparkles,
+  Copy,
+  FileSearch,
+  Trash2,
+  Tag as TagIcon,
+  Activity as ActivityIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { TopBar } from "@/components/layout/TopBar";
 import { AIPanel } from "@/components/layout/AIPanel";
+import { cn } from "@/lib/utils";
 import * as api from "@/api";
-import type { DiskInfo, RecentEntry, Workspace } from "@/api/types";
-import { formatBytes, relativeTime } from "@/lib/format";
-import { fileIconColor } from "@/lib/format";
+import type { DiskInfo, RecentEntry, Tag, UserDir } from "@/api/types";
+import { formatBytes, relativeTime, fileIconColor } from "@/lib/format";
+
+const QUICK_ICON_BY_KIND: Record<string, { icon: any; color: string }> = {
+  home: { icon: Folder, color: "from-slate-400 to-slate-500" },
+  desktop: { icon: Monitor, color: "from-blue-400 to-blue-500" },
+  download: { icon: Download, color: "from-emerald-400 to-emerald-500" },
+  document: { icon: FileText, color: "from-violet-400 to-violet-500" },
+  picture: { icon: ImageIcon, color: "from-rose-400 to-rose-500" },
+  video: { icon: ImageIcon, color: "from-amber-400 to-amber-500" },
+  audio: { icon: ImageIcon, color: "from-pink-400 to-pink-500" },
+};
 
 export default function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? t("home.greeting_morning") : hour < 18 ? t("home.greeting_afternoon") : t("home.greeting_evening");
 
   const [recents, setRecents] = useState<RecentEntry[]>([]);
   const [disks, setDisks] = useState<DiskInfo[]>([]);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [userDirs, setUserDirs] = useState<UserDir[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
 
   useEffect(() => {
-    api.listRecents(10).then(setRecents).catch(() => {});
+    api.listRecents(8).then(setRecents).catch(() => {});
     api.listDisks().then(setDisks).catch(() => {});
-    api.listWorkspaces().then(setWorkspaces).catch(() => {});
+    api.listUserDirs().then(setUserDirs).catch(() => {});
+    api.listTags().then(setTags).catch(() => {});
   }, []);
 
-  const aiCards = [
-    { icon: Sparkles, title: t("home.ai_search"), desc: t("home.ai_search_desc"), to: "/search" },
-    { icon: Wand2, title: t("home.auto_tidy"), desc: t("home.auto_tidy_desc"), to: "/analyze" },
-    { icon: History, title: t("home.version_history"), desc: t("home.version_history_desc"), to: "/files" },
-    { icon: Eye, title: t("home.preview"), desc: t("home.preview_desc"), to: "/preview" },
-  ];
-
-  const primary = disks[0];
   const totalUsed = disks.reduce((s, d) => s + d.used, 0);
   const totalAll = disks.reduce((s, d) => s + d.total, 0);
   const overall = totalAll > 0 ? Math.round((totalUsed / totalAll) * 100) : 0;
+
+  const suggestions = [
+    { icon: Sparkles, title: t("home.sug_organize"), to: "/automation", color: "from-blue-400/20 to-violet-400/20" },
+    { icon: Copy, title: t("home.sug_duplicates"), to: "/duplicates", color: "from-emerald-400/20 to-cyan-400/20" },
+    { icon: FileSearch, title: t("home.sug_extract"), to: "/preview", color: "from-amber-400/20 to-rose-400/20" },
+    { icon: Trash2, title: t("home.sug_cleanup"), to: "/analyze", color: "from-rose-400/20 to-pink-400/20" },
+  ];
 
   return (
     <div className="flex-1 flex min-w-0">
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-6">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{greeting}</h1>
-            <p className="text-sm text-muted-foreground mt-1">{t("home.subtitle")}</p>
-          </div>
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
+          <div className="grid grid-cols-3 gap-6">
+            {/* Main column */}
+            <div className="col-span-2 space-y-6">
+              {/* Quick Access */}
+              <section>
+                <SectionHeader title={t("home.quick_access")} />
+                <div className="grid grid-cols-6 gap-3">
+                  {userDirs.slice(0, 6).map((d) => {
+                    const meta = QUICK_ICON_BY_KIND[d.kind] || QUICK_ICON_BY_KIND.home;
+                    const Icon = meta.icon;
+                    return (
+                      <button
+                        key={d.path}
+                        onClick={() => navigate(`/files?path=${encodeURIComponent(d.path)}`)}
+                        className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-accent/40 transition-colors"
+                      >
+                        <div className={cn("w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm", meta.color)}>
+                          <Icon className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="text-xs truncate w-full text-center">{d.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
 
-          <div>
-            <div className="text-sm font-medium text-muted-foreground mb-3">{t("home.ai_quick")}</div>
-            <div className="grid grid-cols-4 gap-4">
-              {aiCards.map((c) => (
-                <Card
-                  key={c.title}
-                  className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => navigate(c.to)}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mb-3">
-                    <c.icon className="w-5 h-5 text-primary-foreground" />
-                  </div>
-                  <div className="font-medium text-sm">{c.title}</div>
-                  <div className="text-xs text-muted-foreground mt-1 leading-relaxed">{c.desc}</div>
-                </Card>
-              ))}
-            </div>
-          </div>
+              {/* Storage Overview */}
+              <section>
+                <SectionHeader title={t("home.storage_overview")} />
+                <div className="grid grid-cols-4 gap-3">
+                  {disks.slice(0, 4).map((d) => (
+                    <Card key={d.mount_point} className="p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <HardDrive className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-medium truncate">
+                          {d.name || d.mount_point}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: `${Math.min(100, d.percent)}%` }} />
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-1.5">
+                        {formatBytes(d.used)} / {formatBytes(d.total)}
+                      </div>
+                    </Card>
+                  ))}
+                  {disks.length === 0 &&
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <Card key={i} className="p-3 h-[78px] animate-pulse bg-secondary/30" />
+                    ))}
+                </div>
+              </section>
 
-          <div className="grid grid-cols-3 gap-4">
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>{t("home.recent_files")}</CardTitle>
-                <button
-                  onClick={() => navigate("/files")}
-                  className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
-                >
-                  {t("home.view_all")} <ChevronRight className="w-3 h-3" />
-                </button>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                {recents.length === 0 && (
-                  <div className="text-xs text-muted-foreground py-6 text-center">
-                    暂无记录，使用应用后会出现在这里
+              {/* Recent Files */}
+              <section>
+                <SectionHeader
+                  title={t("home.recent_files")}
+                  action={
+                    <button
+                      onClick={() => navigate("/files")}
+                      className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                    >
+                      {t("home.view_all")} <ChevronRight className="w-3 h-3" />
+                    </button>
+                  }
+                />
+                {recents.length === 0 ? (
+                  <Card className="p-6 text-center text-xs text-muted-foreground">
+                    {t("home.no_recents")}
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3">
+                    {recents.slice(0, 4).map((f) => {
+                      const ext = f.name.split(".").pop();
+                      const color = f.is_dir ? "text-blue-500" : fileIconColor(ext);
+                      const Icon = f.is_dir ? Folder : FileText;
+                      return (
+                        <Card
+                          key={f.path}
+                          onClick={() => api.openPath(f.path).catch(() => {})}
+                          className="p-0 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                        >
+                          <div className="aspect-[4/3] bg-gradient-to-br from-secondary/60 to-secondary/30 flex items-center justify-center">
+                            <Icon className={cn("w-10 h-10", color)} />
+                          </div>
+                          <div className="p-2">
+                            <div className="text-xs font-medium truncate">{f.name}</div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {relativeTime(f.accessed_at)}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
-                {recents.map((f) => {
-                  const ext = f.name.split(".").pop();
-                  const Icon = f.is_dir ? Folder : FileText;
-                  const color = f.is_dir ? "text-blue-500" : fileIconColor(ext);
-                  return (
-                    <div
-                      key={f.path}
-                      onClick={() => api.openPath(f.path)}
-                      className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-accent/60 cursor-pointer"
-                    >
-                      <Icon className={`w-4 h-4 ${color}`} />
-                      <div className="flex-1 text-sm truncate">{f.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {relativeTime(f.accessed_at)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+              </section>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("home.storage")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center py-2">
-                  <StorageRing
-                    percent={overall}
-                    used={primary ? primary.used : totalUsed}
-                    total={primary ? primary.total : totalAll}
-                  />
-                </div>
-                <div className="space-y-2 mt-2 text-xs">
-                  {disks.slice(0, 4).map((d) => (
-                    <Bar
-                      key={d.mount_point}
-                      label={d.mount_point.split(/[\\/]/).pop() || d.mount_point}
-                      value={Math.round(d.percent)}
-                      color="bg-primary"
-                    />
+              {/* AI Suggestions */}
+              <section>
+                <SectionHeader title={t("home.ai_suggestions")} />
+                <div className="grid grid-cols-4 gap-3">
+                  {suggestions.map((s) => (
+                    <Card
+                      key={s.title}
+                      onClick={() => navigate(s.to)}
+                      className="p-0 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                    >
+                      <div className={cn("aspect-[4/3] bg-gradient-to-br flex items-center justify-center", s.color)}>
+                        <s.icon className="w-8 h-8 text-foreground/70" />
+                      </div>
+                      <div className="p-2">
+                        <div className="text-xs font-medium truncate">{s.title}</div>
+                      </div>
+                    </Card>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </section>
+            </div>
 
-          <div>
-            <div className="text-sm font-medium text-muted-foreground mb-3">{t("home.shortcuts")}</div>
-            <div className="grid grid-cols-3 gap-4">
-              {workspaces.length === 0 && (
-                <Card className="col-span-3 p-6 text-center text-sm text-muted-foreground">
-                  暂无工作区，去 <button onClick={() => navigate("/workspace")} className="text-primary">工作区</button> 创建一个
-                </Card>
-              )}
-              {workspaces.slice(0, 3).map((w) => (
-                <Card key={w.id} className="p-5 cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-primary/15 to-primary/5">
-                  <Folder className="w-6 h-6 text-foreground/70 mb-3" />
-                  <div className="font-medium">{w.name}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    最近更新 {relativeTime(w.updated_at)}
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Storage Usage */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("home.storage_usage")}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-center py-2">
+                    <StorageRing percent={overall} used={totalUsed} total={totalAll} />
                   </div>
-                </Card>
-              ))}
+                  <div className="space-y-2 mt-4 text-xs">
+                    {disks.slice(0, 4).map((d) => (
+                      <div key={d.mount_point} className="flex items-center gap-2">
+                        <span className="flex-1 truncate text-muted-foreground">
+                          {d.name || d.mount_point.split(/[\\/]/).pop() || d.mount_point}
+                        </span>
+                        <span>{Math.round(d.percent)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-4"
+                    onClick={() => navigate("/analyze")}
+                  >
+                    {t("home.manage_storage")}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Tags */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TagIcon className="w-4 h-4" />
+                    {t("home.tags")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {tags.length === 0 ? (
+                    <div className="text-xs text-muted-foreground py-2">
+                      {t("home.no_tags")}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {tags.slice(0, 12).map((tg) => (
+                        <span
+                          key={tg.id}
+                          onClick={() => navigate("/tags")}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] cursor-pointer hover:opacity-80"
+                          style={{
+                            backgroundColor: `${tg.color}22`,
+                            color: tg.color,
+                          }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: tg.color }}
+                          />
+                          {tg.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Activity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ActivityIcon className="w-4 h-4" />
+                    {t("home.activity")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {recents.length === 0 ? (
+                    <div className="text-xs text-muted-foreground py-2">
+                      {t("home.no_activity")}
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {recents.slice(0, 4).map((r) => {
+                        const Icon = r.is_dir ? Folder : FileText;
+                        const color = r.is_dir ? "text-blue-500" : fileIconColor(r.name.split(".").pop());
+                        return (
+                          <div key={r.path} className="flex items-start gap-2">
+                            <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                              <Icon className={cn("w-3.5 h-3.5", color)} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs truncate">{r.name}</div>
+                              <div className="text-[10px] text-muted-foreground">
+                                {relativeTime(r.accessed_at)}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => navigate("/files")}
+                    className="text-xs text-primary hover:underline mt-3 flex items-center gap-1"
+                  >
+                    {t("home.view_all_activity")} <ChevronRight className="w-3 h-3" />
+                  </button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
       </div>
       <AIPanel />
+    </div>
+  );
+}
+
+function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h2 className="text-sm font-medium">{title}</h2>
+      {action}
     </div>
   );
 }
@@ -199,18 +349,6 @@ function StorageRing({
           {formatBytes(used)} / {formatBytes(total)}
         </div>
       </div>
-    </div>
-  );
-}
-
-function Bar({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="w-12 text-muted-foreground truncate">{label}</span>
-      <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
-        <div className={`h-full ${color}`} style={{ width: `${value}%` }} />
-      </div>
-      <span className="w-8 text-right text-muted-foreground">{value}%</span>
     </div>
   );
 }

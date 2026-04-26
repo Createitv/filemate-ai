@@ -46,7 +46,22 @@
     "shortcuts": "快捷工作区",
     "ws_dev": "开发项目",
     "ws_design": "设计素材",
-    "ws_docs": "工作文档"
+    "ws_docs": "工作文档",
+    "quick_access": "快速访问",
+    "storage_overview": "存储概览",
+    "ai_suggestions": "AI 建议",
+    "storage_usage": "存储用量",
+    "manage_storage": "管理存储",
+    "tags": "标签",
+    "activity": "动态",
+    "view_all_activity": "查看全部动态",
+    "sug_organize": "整理下载文件夹",
+    "sug_duplicates": "查找重复文件",
+    "sug_extract": "提取 PDF 文本",
+    "sug_cleanup": "清理大文件",
+    "no_recents": "暂无最近文件",
+    "no_tags": "暂无标签",
+    "no_activity": "暂无动态"
   },
   "files": {
     "title": "文件",

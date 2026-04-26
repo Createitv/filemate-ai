@@ -46,7 +46,22 @@
     "shortcuts": "Workspaces",
     "ws_dev": "Development",
     "ws_design": "Design Assets",
-    "ws_docs": "Work Documents"
+    "ws_docs": "Work Documents",
+    "quick_access": "Quick Access",
+    "storage_overview": "Storage Overview",
+    "ai_suggestions": "AI Suggestions",
+    "storage_usage": "Storage Usage",
+    "manage_storage": "Manage Storage",
+    "tags": "Tags",
+    "activity": "Activity",
+    "view_all_activity": "View all activity",
+    "sug_organize": "Organize Downloads",
+    "sug_duplicates": "Find Duplicates",
+    "sug_extract": "Extract Text from PDF",
+    "sug_cleanup": "Large Files Cleanup",
+    "no_recents": "No recent files yet",
+    "no_tags": "No tags yet",
+    "no_activity": "No activity yet"
   },
   "files": {
     "title": "Files",
